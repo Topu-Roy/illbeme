@@ -1,0 +1,97 @@
+enum Mood {
+  Great
+  Good
+  Okay
+  Bad
+  Awful
+}
+
+model JournalEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  mood      Mood
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("journal_entry")
+}
+
+model DailyCheckIn {
+  id             String            @id @default(uuid())
+  userId         String
+  date           DateTime          @default(now())
+  overallMood    Mood
+  emotions       Json // Example: { "Happy": 2, "Anxious": 1 }
+  lessonsLearned String?
+  overallRating  Int
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  learnings      CheckInLearning[]
+  memories       CheckInMemory[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One check-in per user per day
+  @@unique([userId, date])
+  @@index([userId])
+  @@map("daily_reflection")
+}
+
+model CheckInMemory {
+  id             String   @id @default(uuid())
+  userId         String
+  dailyCheckInId String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyCheckIn DailyCheckIn @relation(fields: [dailyCheckInId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dailyCheckInId])
+  @@map("memory")
+}
+
+model CheckInLearning {
+  id             String   @id @default(uuid())
+  userId         String
+  dailyCheckInId String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyCheckIn DailyCheckIn @relation(fields: [dailyCheckInId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dailyCheckInId])
+  @@map("learning")
+}
+
+model User {
+  id              String            @id @default(uuid())
+  name            String
+  email           String
+  emailVerified   Boolean           @default(false)
+  image           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  role            String?
+  banned          Boolean?          @default(false)
+  banReason       String?
+  banExpires      DateTime?
+  sessions        Session[]
+  accounts        Account[]
+  passkeys        Passkey[]
+  journalEntries  JournalEntry[]
+  dailyCheckIns   DailyCheckIn[]
+  learnings       CheckInLearning[]
+  checkInMemories CheckInMemory[]
+
+  @@map("user")
+}
