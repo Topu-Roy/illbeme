@@ -3,19 +3,16 @@ import { Edit2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Emotion } from "./types";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DailyCheckInType = any; // Replace with proper type if available
-
-interface SummaryStepProps {
+type SummaryStepProps = {
   assessment: number;
   generalMood: Mood | null;
-  todayCheckIn: DailyCheckInType;
+  todayCheckIn: { overallRating: number };
   emotionTallies: Record<Emotion, number>;
   memories: string[];
   learnings: string[];
   isEditing: boolean;
   handleEdit: () => void;
-}
+};
 
 export function SummaryStep({
   assessment,

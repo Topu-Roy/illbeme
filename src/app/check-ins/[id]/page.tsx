@@ -1,32 +1,31 @@
 "use client";
 
-import React from "react";
-import { useCheckInsQuery } from "@/hooks/useCheckIn";
+import { AlertCircle, ArrowLeft, CloudRain, Heart, Meh, Smile, ThumbsUp } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useCheckInsQuery } from "@/hooks/useCheckIn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Smile, ThumbsUp, Heart, CloudRain, AlertCircle, ArrowLeft, Meh } from "lucide-react";
-import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const MOOD_ICONS: Record<string, React.ReactNode> = {
-  Great: <Heart className="w-4 h-4 text-pink-500" />,
-  Good: <ThumbsUp className="w-4 h-4 text-green-500" />,
-  Okay: <Meh className="w-4 h-4 text-yellow-500" />,
-  Bad: <CloudRain className="w-4 h-4 text-blue-500" />,
-  Awful: <AlertCircle className="w-4 h-4 text-red-500" />,
+  Great: <Heart className="h-4 w-4 text-pink-500" />,
+  Good: <ThumbsUp className="h-4 w-4 text-green-500" />,
+  Okay: <Meh className="h-4 w-4 text-yellow-500" />,
+  Bad: <CloudRain className="h-4 w-4 text-blue-500" />,
+  Awful: <AlertCircle className="h-4 w-4 text-red-500" />,
 };
 
 export default function CheckInDetailPage() {
   const { id } = useParams();
-  const { data: checkIns = [] } = useCheckInsQuery();
+  const { data: checkIns } = useCheckInsQuery();
   const router = useRouter();
 
-  const checkIn = checkIns.find((r) => r.id === id);
+  const checkIn = checkIns?.data?.find(r => r.id === id);
 
   if (!checkIn) {
     return (
-      <div className="min-h-screen bg-background p-8 flex flex-col items-center justify-center space-y-4">
+      <div className="bg-background flex min-h-screen flex-col items-center justify-center space-y-4 p-8">
         <h1 className="text-2xl font-bold">Check-in not found</h1>
         <Button onClick={() => router.push("/check-ins")}>Back to Check-Ins</Button>
       </div>
@@ -37,9 +36,9 @@ export default function CheckInDetailPage() {
   const emotionEntries = Object.entries(emotions).filter(([, count]) => count > 0);
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-3xl mx-auto space-y-8">
-        <header className="flex items-center gap-4 mb-8">
+    <div className="bg-background min-h-screen p-8">
+      <div className="mx-auto max-w-3xl space-y-8">
+        <header className="mb-8 flex items-center gap-4">
           <Link href="/check-ins">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-6 w-6" />
@@ -64,9 +63,9 @@ export default function CheckInDetailPage() {
             </CardHeader>
             <CardContent className="grid gap-6 sm:grid-cols-2">
               <div className="flex flex-col space-y-2">
-                <span className="text-sm text-muted-foreground">General Mood</span>
+                <span className="text-muted-foreground text-sm">General Mood</span>
                 <div className="flex items-center gap-2 text-lg font-medium">
-                  {MOOD_ICONS[checkIn.overallMood] || <Smile className="w-4 h-4" />}
+                  {MOOD_ICONS[checkIn.overallMood] ?? <Smile className="h-4 w-4" />}
                   <span>{checkIn.overallMood}</span>
                 </div>
               </div>
@@ -82,7 +81,7 @@ export default function CheckInDetailPage() {
               {emotionEntries.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {emotionEntries.map(([emotion, count]) => (
-                    <Badge key={emotion} variant="secondary" className="text-sm py-1 px-3">
+                    <Badge key={emotion} variant="secondary" className="px-3 py-1 text-sm">
                       {emotion} <span className="ml-2 opacity-70">x{count}</span>
                     </Badge>
                   ))}
@@ -99,8 +98,8 @@ export default function CheckInDetailPage() {
                 <CardTitle>What I Learned</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="whitespace-pre-wrap leading-relaxed">
-                  {checkIn.lessonsLearned || <span className="text-muted-foreground italic">No entry.</span>}
+                <p className="leading-relaxed whitespace-pre-wrap">
+                  {checkIn.lessonsLearned ?? <span className="text-muted-foreground italic">No entry.</span>}
                 </p>
               </CardContent>
             </Card>
@@ -112,7 +111,7 @@ export default function CheckInDetailPage() {
               <CardContent>
                 <div className="space-y-2">
                   {checkIn.learnings && checkIn.learnings.length > 0 ? (
-                    <ul className="list-disc pl-5 space-y-1">
+                    <ul className="list-disc space-y-1 pl-5">
                       {checkIn.learnings.map((l, i: number) => (
                         <li key={i} className="leading-relaxed">
                           {l.content}

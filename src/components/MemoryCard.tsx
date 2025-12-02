@@ -1,13 +1,29 @@
 "use client";
 
-import type { DailyCheckIn, CheckInLearning } from "@/generated/prisma/client";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Calendar, Lightbulb } from "lucide-react";
 import { useState } from "react";
+import type { Mood } from "@/generated/prisma/client";
+import type { JsonValue } from "@/generated/prisma/internal/prismaNamespace";
+import { Calendar, Lightbulb } from "lucide-react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-interface MemoryCardProps {
-  checkIn: DailyCheckIn & { learnings?: CheckInLearning[] };
-}
+type MemoryCardProps = {
+  checkIn: {
+    date: Date;
+    id: string;
+    overallMood: Mood;
+    emotions: JsonValue;
+    lessonsLearned: string | null;
+    overallRating: number;
+    learnings: {
+      id: string;
+      content: string;
+    }[];
+    memories: {
+      id: string;
+      content: string;
+    }[];
+  };
+};
 
 const moodDots = {
   Great: "bg-green-500",
@@ -33,10 +49,10 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
 
   return (
     <Card
-      className="group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-1 border bg-white overflow-hidden"
+      className="group cursor-pointer overflow-hidden border bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
       onClick={() => setIsExpanded(!isExpanded)}
     >
-      <CardHeader className="pb-4 border-b">
+      <CardHeader className="border-b pb-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <Calendar className="h-4 w-4" />
@@ -55,11 +71,11 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
         </div>
 
         {emotionEntries.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="mt-3 flex flex-wrap gap-1.5">
             {emotionEntries.map(([emotion, intensity]) => (
               <span
                 key={emotion}
-                className="inline-block px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                className="inline-block rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
               >
                 {emotion} {intensity > 1 && `×${intensity}`}
               </span>
@@ -68,14 +84,14 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
         )}
       </CardHeader>
 
-      <CardContent className="pt-4 space-y-4">
+      <CardContent className="space-y-4 pt-4">
         {hasLessonsLearned && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+            <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <Lightbulb className="h-3.5 w-3.5" />
               Reflection
             </div>
-            <p className={`text-slate-700 leading-relaxed ${!isExpanded && "line-clamp-3"}`}>
+            <p className={`leading-relaxed text-slate-700 ${!isExpanded && "line-clamp-3"}`}>
               {checkIn.lessonsLearned}
             </p>
           </div>
@@ -83,13 +99,10 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
 
         {hasLearnings && (
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Key Learnings</div>
+            <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Key Learnings</div>
             <ul className={`space-y-2 ${!isExpanded && "line-clamp-3"}`}>
-              {checkIn.learnings!.map((learning) => (
-                <li
-                  key={learning.id}
-                  className="text-sm text-slate-700 pl-4 border-l-2 border-slate-200 py-1"
-                >
+              {checkIn.learnings.map(learning => (
+                <li key={learning.id} className="border-l-2 border-slate-200 py-1 pl-4 text-sm text-slate-700">
                   {learning.content}
                 </li>
               ))}
@@ -98,8 +111,8 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
         )}
 
         {((hasLessonsLearned && checkIn.lessonsLearned!.length > 150) ??
-          (hasLearnings && checkIn.learnings!.length > 2)) && (
-          <button className="text-xs text-slate-500 font-medium hover:text-slate-700 transition-colors pt-2">
+          (hasLearnings && checkIn.learnings.length > 2)) && (
+          <button className="pt-2 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700">
             {isExpanded ? "Show less" : "Read more"}
           </button>
         )}

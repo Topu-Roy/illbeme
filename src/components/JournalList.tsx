@@ -73,17 +73,21 @@ export function JournalList() {
   };
 
   // Group entries by date
-  const groupedEntries = entries?.data?.reduce(
-    (groups, entry) => {
-      const date = new Date(entry.createdAt).toDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(entry);
-      return groups;
-    },
-    {} as Record<string, typeof entries>
-  );
+  const groupedEntries =
+    entries?.data?.reduce(
+      (groups, entry) => {
+        const date = new Date(entry.createdAt).toDateString();
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(entry);
+        return groups;
+      },
+      {} as Record<
+        string,
+        { id: string; createdAt: Date; content: string; mood: "Great" | "Good" | "Okay" | "Bad" | "Awful" }[]
+      >
+    ) ?? {};
 
   return (
     <div className="flex h-full flex-col space-y-6">
@@ -208,7 +212,7 @@ export function JournalList() {
             </div>
           </div>
         ))}
-        {entries.length === 0 && (
+        {entries?.data?.length === 0 && (
           <div className="text-muted-foreground py-10 text-center">No entries yet. Start writing above!</div>
         )}
       </div>

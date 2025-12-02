@@ -4,12 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { MOODS } from "./constants";
 
-interface MoodStepProps {
+type MoodStepProps = {
   assessment: number;
   setAssessment: (value: number) => void;
   generalMood: Mood | null;
   setGeneralMood: (mood: Mood) => void;
-}
+};
 
 export function MoodStep({ assessment, setAssessment, generalMood, setGeneralMood }: MoodStepProps) {
   return (
