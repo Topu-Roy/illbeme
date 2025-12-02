@@ -16,8 +16,8 @@ export default function Home() {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [sosMode, setSosMode] = useState<boolean>(false);
 
-  const lastCheckIn = checkIns[0]; // Ordered by date desc
-  const currentMood = todayCheckIn?.overallMood ?? lastCheckIn?.overallMood;
+  const lastCheckIn = checkIns?.data?.[0]; // Ordered by date desc
+  const currentMood = todayCheckIn?.data?.overallMood ?? lastCheckIn?.overallMood;
   const isSad = currentMood === "Bad" || currentMood === "Awful";
 
   return (
