@@ -68,9 +68,6 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
-      prismabox:
-        specifier: ^1.1.25
-        version: 1.1.25
       react:
         specifier: 19.2.0
         version: 19.2.0
@@ -129,12 +126,18 @@ importers:
       prisma:
         specifier: ^7.0.1
         version: 7.0.1(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      prismabox:
+        specifier: ^1.1.25
+        version: 1.1.25
       tailwindcss:
         specifier: ^4
         version: 4.1.17
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      typebox:
+        specifier: ^1.0.61
+        version: 1.0.61
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -2953,6 +2956,9 @@ packages:
   type-fest@4.41.0:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
+
+  typebox@1.0.61:
+    resolution: {integrity: sha512-5KeeL5QoPBoYm8Z7tGR1Pw9FjWA75MLhVuiSMCRgtgTg/d2+kTvolFddhOUua9FxpIaqXznFPZcc3sl6cEpafw==}
 
   typed-array-buffer@1.0.3:
     resolution: {integrity: sha512-nAYYwfY3qnzX30IkA6AQZjVbtK6duGontcQm1WSG1MD94YLqK0515GNApXkoxKOWMusVssAHWLh9SeaoefYFGw==}
@@ -5930,6 +5936,8 @@ snapshots:
       prelude-ls: 1.2.1
 
   type-fest@4.41.0: {}
+
+  typebox@1.0.61: {}
 
   typed-array-buffer@1.0.3:
     dependencies:
