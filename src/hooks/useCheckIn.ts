@@ -1,44 +1,58 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { createDailyCheckIn, getCheckIns, getDailyCheckIn, updateDailyCheckIn } from "@/action/checkIn";
+import type { createDailyCheckInSchema, updateDailyCheckInSchema } from "@/schema/check-in";
+import type z from "zod";
+import { api } from "@/lib/eden";
 import { queryClient } from "@/lib/query/query-client";
+import { formatDateDDMMYYYY } from "./helpers";
+import type { QueryKey } from "./types";
 
 export function useCheckInsQuery() {
   return useQuery({
-    queryKey: ["checkIns"],
-    queryFn: () => getCheckIns(),
+    queryKey: ["checkIns"] satisfies QueryKey[],
+    queryFn: () => api.check_in.paginated_check_ins.get(),
   });
 }
 
 export function useDailyCheckInQuery({ date }: { date: Date }) {
+  const formattedDate = formatDateDDMMYYYY(date);
+
   return useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
-    queryKey: ["dailyCheckIn", `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`],
-    queryFn: () => getDailyCheckIn(date),
+    queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[],
+    queryFn: () => api.check_in.get({ query: { date } }),
   });
 }
 
-export function useCreateDailyCheckInMutation({ date }: { date: Date }) {
+export function useCreateDailyCheckInMutation(props: z.infer<typeof createDailyCheckInSchema> & { date: Date }) {
+  const { emotions, overallMood, learnings, lessonsLearned, memories, date } = props;
+  const formattedDate = formatDateDDMMYYYY(date);
+
   return useMutation({
-    mutationFn: createDailyCheckIn,
+    mutationFn: async () =>
+      await api.check_in.post({ emotions, overallMood, learnings, lessonsLearned, memories }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["dailyCheckIn", `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`],
+      void queryClient.invalidateQueries({
+        queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[],
       });
-      queryClient.invalidateQueries({ queryKey: ["checkIns"] });
+      void queryClient.invalidateQueries({ queryKey: ["checkIns"] satisfies QueryKey[] });
     },
   });
 }
 
-export function useUpdateDailyCheckInMutation({ date }: { date: Date }) {
+export function useUpdateDailyCheckInMutation(props: z.infer<typeof updateDailyCheckInSchema> & { date: Date }) {
+  const { id, emotions, overallMood, learnings, lessonsLearned, memories, date } = props;
+  const formattedDate = formatDateDDMMYYYY(date);
+
   return useMutation({
-    mutationFn: updateDailyCheckIn,
+    mutationFn: async () =>
+      await api.check_in.patch({ id, emotions, overallMood, learnings, lessonsLearned, memories }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["dailyCheckIn", `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`],
+      void queryClient.invalidateQueries({
+        queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[],
       });
-      queryClient.invalidateQueries({ queryKey: ["checkIns"] });
+      void queryClient.invalidateQueries({ queryKey: ["checkIns"] satisfies QueryKey[] });
     },
   });
 }

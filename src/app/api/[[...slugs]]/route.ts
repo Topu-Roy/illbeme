@@ -46,13 +46,13 @@ const app = new Elysia({ prefix: "/api" })
 
       //* ------------------------------------- Routes -------------------------------------
       // Check-in routes
-      .group("/check-in", app =>
+      .group("/check_in", app =>
         app
           // Get daily check-in
           .get(
             "/",
-            async ({ body, session }) => {
-              const startOfDay = new Date(body.date);
+            async ({ params, session }) => {
+              const startOfDay = new Date(params.date);
               startOfDay.setHours(0, 0, 0, 0);
               const endOfDay = new Date(startOfDay);
               endOfDay.setDate(endOfDay.getDate() + 1);
@@ -65,17 +65,32 @@ const app = new Elysia({ prefix: "/api" })
                     lt: endOfDay,
                   },
                 },
-                include: {
-                  learnings: true,
-                  memories: true,
+                select: {
+                  id: true,
+                  overallMood: true,
+                  emotions: true,
+                  lessonsLearned: true,
+                  overallRating: true,
+                  date: true,
+                  learnings: {
+                    select: {
+                      id: true,
+                      content: true,
+                    },
+                  },
+                  memories: {
+                    select: {
+                      id: true,
+                      content: true,
+                    },
+                  },
                 },
               });
 
               return checkIn;
             },
             {
-              body: getDailyCheckInSchema,
-              // TODO: Add response schema
+              params: getDailyCheckInSchema,
             }
           )
 
@@ -239,41 +254,48 @@ const app = new Elysia({ prefix: "/api" })
           )
 
           // Get paginated check-in // TODO: Pagination
-          .get(
-            "/paginated-check-ins",
-            async ({ session }) => {
-              const checkIn = await db.dailyCheckIn.findMany({
-                where: {
-                  userId: session.user.id,
+          .get("/paginated_check_ins", async ({ session }) => {
+            const checkIn = await db.dailyCheckIn.findMany({
+              where: {
+                userId: session.user.id,
+              },
+              select: {
+                id: true,
+                date: true,
+                overallMood: true,
+                emotions: true,
+                lessonsLearned: true,
+                overallRating: true,
+                learnings: {
+                  select: {
+                    id: true,
+                    content: true,
+                  },
                 },
-                include: {
-                  learnings: true,
-                  memories: true,
+                memories: {
+                  select: {
+                    id: true,
+                    content: true,
+                  },
                 },
-                take: 10,
-                orderBy: {
-                  date: "desc",
-                },
-              });
+              },
+              take: 10,
+              orderBy: {
+                date: "desc",
+              },
+            });
 
-              return checkIn;
-            },
-            {
-              // body: getPaginatedCheckInSchema,
-              // TODO: Add response schema
-            }
-          )
+            return checkIn;
+          })
       )
 
       // Journal routes
       .group("/journal", app =>
         app
-          // Create journal entry
+          // Get journal entry
           .get(
             "/",
-            async ({ body, session }) => {
-              const { date } = body;
-
+            async ({ query: { date }, session }) => {
               const entry = await db.journalEntry.findMany({
                 where: {
                   userId: session.user.id,
@@ -293,7 +315,7 @@ const app = new Elysia({ prefix: "/api" })
               return entry;
             },
             {
-              body: getJournalEntryInputSchema,
+              query: getJournalEntryInputSchema,
               response: journalEntryOutputSchema,
             }
           )
@@ -339,6 +361,7 @@ const app = new Elysia({ prefix: "/api" })
                 },
                 select: {
                   id: true,
+                  createdAt: true,
                 },
               });
 
