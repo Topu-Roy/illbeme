@@ -35,7 +35,7 @@ const app = new Elysia({ prefix: "/api" })
       .onBeforeHandle(({ session, set }) => {
         if (!session) {
           set.status = 401;
-          return "Unauthorized";
+          throw new Error("Unauthorized");
         }
       })
 
@@ -153,9 +153,25 @@ const app = new Elysia({ prefix: "/api" })
                       }
                     : undefined,
                 },
-                include: {
-                  learnings: true,
-                  memories: true,
+                select: {
+                  id: true,
+                  overallMood: true,
+                  emotions: true,
+                  lessonsLearned: true,
+                  overallRating: true,
+                  date: true,
+                  learnings: {
+                    select: {
+                      id: true,
+                      content: true,
+                    },
+                  },
+                  memories: {
+                    select: {
+                      id: true,
+                      content: true,
+                    },
+                  },
                 },
               });
 

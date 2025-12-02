@@ -1,9 +1,8 @@
-import React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { EMOTIONS } from "./constants";
-import { Emotion } from "./types";
+import type { Emotion } from "./types";
 
 interface EmotionStepProps {
   emotionTallies: Record<Emotion, number>;

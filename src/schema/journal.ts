@@ -27,7 +27,6 @@ export const createJournalEntryOutputSchema = object({
 
 export const deleteJournalEntrySchema = object({
   id: string(),
-  createdAt: date(),
 });
 
 export const updateJournalEntryInputSchema = object({

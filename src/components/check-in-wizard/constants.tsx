@@ -1,16 +1,6 @@
-import {
-  Smile,
-  Frown,
-  ThumbsUp,
-  Heart,
-  CloudRain,
-  Zap,
-  Coffee,
-  AlertCircle,
-  CheckCircle2,
-} from "lucide-react";
-import { Mood } from "@/generated/prisma/enums";
-import { Emotion } from "./types";
+import type { Mood } from "@/generated/prisma/enums";
+import { AlertCircle, CheckCircle2, CloudRain, Coffee, Frown, Heart, Smile, ThumbsUp, Zap } from "lucide-react";
+import type { Emotion } from "./types";
 
 function MoonIcon({ className }: { className?: string }) {
   return (
@@ -30,24 +20,24 @@ function MoonIcon({ className }: { className?: string }) {
 }
 
 export const MOODS: { label: Mood; icon: React.ReactNode }[] = [
-  { label: "Great", icon: <Heart className="w-5 h-5" /> },
-  { label: "Good", icon: <ThumbsUp className="w-5 h-5" /> },
-  { label: "Okay", icon: <Coffee className="w-5 h-5" /> },
-  { label: "Bad", icon: <Frown className="w-5 h-5" /> },
-  { label: "Awful", icon: <AlertCircle className="w-5 h-5" /> },
+  { label: "Great", icon: <Heart className="h-5 w-5" /> },
+  { label: "Good", icon: <ThumbsUp className="h-5 w-5" /> },
+  { label: "Okay", icon: <Coffee className="h-5 w-5" /> },
+  { label: "Bad", icon: <Frown className="h-5 w-5" /> },
+  { label: "Awful", icon: <AlertCircle className="h-5 w-5" /> },
 ];
 
 export const EMOTIONS: { label: Emotion; icon: React.ReactNode }[] = [
-  { label: "Happy", icon: <Smile className="w-5 h-5" /> },
-  { label: "Excited", icon: <Zap className="w-5 h-5" /> },
-  { label: "Grateful", icon: <Heart className="w-5 h-5" /> },
-  { label: "Relaxed", icon: <Coffee className="w-5 h-5" /> },
-  { label: "Sad", icon: <CloudRain className="w-5 h-5" /> },
-  { label: "Anxious", icon: <AlertCircle className="w-5 h-5" /> },
-  { label: "Angry", icon: <Frown className="w-5 h-5" /> },
-  { label: "Tired", icon: <MoonIcon className="w-5 h-5" /> },
-  { label: "Frustrated", icon: <Frown className="w-5 h-5" /> },
-  { label: "Confused", icon: <AlertCircle className="w-5 h-5" /> },
-  { label: "Proud", icon: <ThumbsUp className="w-5 h-5" /> },
-  { label: "Hopeful", icon: <CheckCircle2 className="w-5 h-5" /> },
+  { label: "Happy", icon: <Smile className="h-5 w-5" /> },
+  { label: "Excited", icon: <Zap className="h-5 w-5" /> },
+  { label: "Grateful", icon: <Heart className="h-5 w-5" /> },
+  { label: "Relaxed", icon: <Coffee className="h-5 w-5" /> },
+  { label: "Sad", icon: <CloudRain className="h-5 w-5" /> },
+  { label: "Anxious", icon: <AlertCircle className="h-5 w-5" /> },
+  { label: "Angry", icon: <Frown className="h-5 w-5" /> },
+  { label: "Tired", icon: <MoonIcon className="h-5 w-5" /> },
+  { label: "Frustrated", icon: <Frown className="h-5 w-5" /> },
+  { label: "Confused", icon: <AlertCircle className="h-5 w-5" /> },
+  { label: "Proud", icon: <ThumbsUp className="h-5 w-5" /> },
+  { label: "Hopeful", icon: <CheckCircle2 className="h-5 w-5" /> },
 ];

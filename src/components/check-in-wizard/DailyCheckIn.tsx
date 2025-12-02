@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import type { Mood } from "@/generated/prisma/enums";
 import confetti from "canvas-confetti";
+import {
+  useCreateDailyCheckInMutation,
+  useDailyCheckInQuery,
+  useUpdateDailyCheckInMutation,
+} from "@/hooks/useCheckIn";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,33 +17,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  useCreateDailyCheckInMutation,
-  useDailyCheckInQuery,
-  useUpdateDailyCheckInMutation,
-} from "@/hooks/useCheckIn";
-import { Mood } from "@/generated/prisma/enums";
-import { DailyCheckInProps, Emotion } from "./types";
-import { MoodStep } from "./MoodStep";
 import { EmotionStep } from "./EmotionStep";
-import { MemoriesStep } from "./MemoriesStep";
 import { LearningsStep } from "./LearningsStep";
+import { MemoriesStep } from "./MemoriesStep";
+import { MoodStep } from "./MoodStep";
 import { SummaryStep } from "./SummaryStep";
+import type { DailyCheckInProps, Emotion } from "./types";
 
 export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
-  const { mutate: saveCheckIn, isPending: isCreating } = useCreateDailyCheckInMutation({
-    date: new Date(),
-  });
-  const { mutate: updateCheckIn, isPending: isUpdating } = useUpdateDailyCheckInMutation({
-    date: new Date(),
-  });
+  const { mutate: saveCheckIn, isPending: isCreating } = useCreateDailyCheckInMutation();
+  const { mutate: updateCheckIn, isPending: isUpdating } = useUpdateDailyCheckInMutation();
   const { data: todayCheckIn } = useDailyCheckInQuery({ date: new Date() });
 
   const [isEditing, setIsEditing] = useState(false);
   const [step, setStep] = useState(todayCheckIn && !isEditing ? 5 : 1);
 
   const [assessment, setAssessment] = useState<number>(5);
-  const [generalMood, setGeneralMood] = useState<Mood | null>(todayCheckIn?.overallMood ?? null);
+  const [generalMood, setGeneralMood] = useState<Mood | null>(todayCheckIn?.data?.overallMood ?? null);
 
   // Initialize emotion tallies from existing check-in
   const initializeEmotionTallies = () => {
@@ -56,9 +52,9 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
       Hopeful: 0,
     };
 
-    if (todayCheckIn?.emotions && typeof todayCheckIn.emotions === "object") {
-      const existing = todayCheckIn.emotions as Record<string, number>;
-      Object.keys(existing).forEach((key) => {
+    if (todayCheckIn?.data?.emotions && typeof todayCheckIn.data.emotions === "object") {
+      const existing = todayCheckIn.data.emotions as Record<string, number>;
+      Object.keys(existing).forEach(key => {
         if (key in defaultTallies) {
           defaultTallies[key as Emotion] = existing[key];
         }
@@ -70,31 +66,31 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
 
   const [emotionTallies, setEmotionTallies] = useState<Record<Emotion, number>>(initializeEmotionTallies());
 
-  const [learned] = useState(todayCheckIn?.lessonsLearned ?? "");
-  const [learnings, setLearnings] = useState<string[]>(todayCheckIn?.learnings?.map((l) => l.content) ?? []);
-  const [memories, setMemories] = useState<string[]>(todayCheckIn?.memories?.map((m) => m.content) ?? []);
+  const [learned] = useState(todayCheckIn?.data?.lessonsLearned ?? "");
+  const [learnings, setLearnings] = useState<string[]>(todayCheckIn?.data?.learnings?.map(l => l.content) ?? []);
+  const [memories, setMemories] = useState<string[]>(todayCheckIn?.data?.memories?.map(m => m.content) ?? []);
 
   const [memoryInput, setMemoryInput] = useState("");
   const [learningInput, setLearningInput] = useState("");
 
   const handleNext = () => {
     if (step === 3 && memoryInput.trim()) {
-      setMemories((prev) => [...prev, memoryInput.trim()]);
+      setMemories(prev => [...prev, memoryInput.trim()]);
       setMemoryInput("");
     }
 
     if (step === 4 && learningInput.trim()) {
-      setLearnings((prev) => [...prev, learningInput.trim()]);
+      setLearnings(prev => [...prev, learningInput.trim()]);
       setLearningInput("");
     }
 
-    setStep((prev) => prev + 1);
+    setStep(prev => prev + 1);
   };
 
-  const handleBack = () => setStep((prev) => prev - 1);
+  const handleBack = () => setStep(prev => prev - 1);
 
   const handleTally = (emotion: Emotion, delta: number) => {
-    setEmotionTallies((prev) => ({
+    setEmotionTallies(prev => ({
       ...prev,
       [emotion]: Math.max(0, prev[emotion] + delta),
     }));
@@ -125,7 +121,7 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
     setStep(1);
   };
 
-  const handleSubmit = () => {
+  function handleSubmit() {
     if (!generalMood) return;
 
     // Filter out zero counts
@@ -151,12 +147,12 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
         }
 
         const particleCount = 50 * (timeLeft / duration);
-        confetti({
+        void confetti({
           ...defaults,
           particleCount,
           origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
         });
-        confetti({
+        void confetti({
           ...defaults,
           particleCount,
           origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
@@ -172,9 +168,9 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
       memories: memories,
     };
 
-    if (todayCheckIn && isEditing) {
+    if (todayCheckIn?.data?.id && isEditing) {
       updateCheckIn(
-        { id: todayCheckIn.id, ...checkInData },
+        { id: todayCheckIn.data.id, ...checkInData },
         {
           onSuccess: () => {
             setIsEditing(false);
@@ -189,18 +185,18 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
         },
       });
     }
-  };
+  }
 
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0 gap-0 overflow-hidden">
-        <div className="px-6 py-4 border-b">
+    <Dialog open={true} onOpenChange={open => !open && onCancel()}>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-hidden overflow-y-auto p-0 sm:max-w-xl">
+        <div className="border-b px-6 py-4">
           <DialogHeader>
             <DialogTitle className="text-xl">Daily Check-In</DialogTitle>
             <DialogDescription>Step {step} of 5</DialogDescription>
           </DialogHeader>
         </div>
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 p-6">
           {step === 1 && (
             <MoodStep
               assessment={assessment}
@@ -247,8 +243,8 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
             />
           )}
         </div>
-        <div className="p-6 border-t bg-secondary/10">
-          <DialogFooter className="flex sm:justify-between gap-2">
+        <div className="bg-secondary/10 border-t p-6">
+          <DialogFooter className="flex gap-2 sm:justify-between">
             <Button variant="ghost" onClick={step === 1 ? onCancel : handleBack}>
               {step === 1 ? "Cancel" : "Back"}
             </Button>
@@ -266,8 +262,8 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
                     {isCreating || isUpdating
                       ? "Generating AI rating..."
                       : isEditing
-                      ? "Save Changes"
-                      : "Complete Check-In"}
+                        ? "Save Changes"
+                        : "Complete Check-In"}
                   </Button>
                 )}
               </>

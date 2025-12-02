@@ -1,6 +1,6 @@
 "use client";
 
-import { DailyCheckIn, CheckInLearning } from "@/generated/prisma/client";
+import type { DailyCheckIn, CheckInLearning } from "@/generated/prisma/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Calendar, Lightbulb } from "lucide-react";
 import { useState } from "react";
@@ -27,7 +27,7 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
 
   const hasLessonsLearned = checkIn.lessonsLearned && checkIn.lessonsLearned.trim().length > 0;
   const hasLearnings = checkIn.learnings && checkIn.learnings.length > 0;
-  const hasContent = hasLessonsLearned || hasLearnings;
+  const hasContent = hasLessonsLearned ?? hasLearnings;
 
   if (!hasContent) return null;
 
@@ -97,7 +97,7 @@ export function MemoryCard({ checkIn }: MemoryCardProps) {
           </div>
         )}
 
-        {((hasLessonsLearned && checkIn.lessonsLearned!.length > 150) ||
+        {((hasLessonsLearned && checkIn.lessonsLearned!.length > 150) ??
           (hasLearnings && checkIn.learnings!.length > 2)) && (
           <button className="text-xs text-slate-500 font-medium hover:text-slate-700 transition-colors pt-2">
             {isExpanded ? "Show less" : "Read more"}

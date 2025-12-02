@@ -25,33 +25,23 @@ export function useDailyCheckInQuery({ date }: { date: Date }) {
   });
 }
 
-export function useCreateDailyCheckInMutation(props: z.infer<typeof createDailyCheckInSchema> & { date: Date }) {
-  const { emotions, overallMood, learnings, lessonsLearned, memories, date } = props;
-  const formattedDate = formatDateDDMMYYYY(date);
-
+export function useCreateDailyCheckInMutation() {
   return useMutation({
-    mutationFn: async () =>
-      await api.check_in.post({ emotions, overallMood, learnings, lessonsLearned, memories }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[],
-      });
+    mutationFn: (body: z.infer<typeof createDailyCheckInSchema>) => api.check_in.post(body),
+    onSuccess: ({ data }) => {
+      const formattedDate = formatDateDDMMYYYY(data ? data.date : new Date());
+      void queryClient.invalidateQueries({ queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[] });
       void queryClient.invalidateQueries({ queryKey: ["checkIns"] satisfies QueryKey[] });
     },
   });
 }
 
-export function useUpdateDailyCheckInMutation(props: z.infer<typeof updateDailyCheckInSchema> & { date: Date }) {
-  const { id, emotions, overallMood, learnings, lessonsLearned, memories, date } = props;
-  const formattedDate = formatDateDDMMYYYY(date);
-
+export function useUpdateDailyCheckInMutation() {
   return useMutation({
-    mutationFn: async () =>
-      await api.check_in.patch({ id, emotions, overallMood, learnings, lessonsLearned, memories }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[],
-      });
+    mutationFn: async (body: z.infer<typeof updateDailyCheckInSchema>) => await api.check_in.patch(body),
+    onSuccess: ({ data }) => {
+      const formattedDate = formatDateDDMMYYYY(data ? data.date : new Date());
+      void queryClient.invalidateQueries({ queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[] });
       void queryClient.invalidateQueries({ queryKey: ["checkIns"] satisfies QueryKey[] });
     },
   });

@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
+import { Check, Edit2, Frown, Heart, Meh, Send, ThumbsUp, Trash2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
-  useJournalEntriesQuery,
   useCreateJournalEntryMutation,
   useDeleteJournalEntryMutation,
+  useJournalEntriesQuery,
   useUpdateJournalEntryMutation,
 } from "@/hooks/useJournal";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Trash2, Edit2, X, Check, Frown, Meh, ThumbsUp, Heart } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type Mood = "Great" | "Good" | "Okay" | "Bad" | "Awful";
 
@@ -24,20 +24,15 @@ const MOODS: { value: Mood; icon: React.ElementType; label: string; color: strin
 ];
 
 export function JournalList() {
-  const { data: entries = [] } = useJournalEntriesQuery();
+  const { data: entries } = useJournalEntriesQuery({ date: new Date() });
   const createEntry = useCreateJournalEntryMutation();
   const deleteEntry = useDeleteJournalEntryMutation();
   const updateEntry = useUpdateJournalEntryMutation();
 
-  const [mounted, setMounted] = useState(false);
   const [newEntry, setNewEntry] = useState("");
   const [selectedMood, setSelectedMood] = useState<Mood>("Good");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSubmit = () => {
     if (!newEntry.trim()) return;
@@ -65,7 +60,7 @@ export function JournalList() {
 
   const saveEdit = (id: string) => {
     if (editContent.trim()) {
-      updateEntry.mutate({ id, content: editContent });
+      updateEntry.mutate({ id, content: editContent, mood: selectedMood });
     }
     setEditingId(null);
     setEditContent("");
@@ -73,29 +68,30 @@ export function JournalList() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this entry?")) {
-      deleteEntry.mutate(id);
+      deleteEntry.mutate({ id });
     }
   };
 
   // Group entries by date
-  const groupedEntries = entries.reduce((groups, entry) => {
-    const date = new Date(entry.createdAt).toDateString();
-    if (!groups[date]) {
-      groups[date] = [];
-    }
-    groups[date].push(entry);
-    return groups;
-  }, {} as Record<string, typeof entries>);
-
-  if (!mounted) return null;
+  const groupedEntries = entries?.data?.reduce(
+    (groups, entry) => {
+      const date = new Date(entry.createdAt).toDateString();
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(entry);
+      return groups;
+    },
+    {} as Record<string, typeof entries>
+  );
 
   return (
-    <div className="flex flex-col h-full space-y-6">
-      <p className="font-semibold text-2xl">Add new entry</p>
+    <div className="flex h-full flex-col space-y-6">
+      <p className="text-2xl font-semibold">Add new entry</p>
 
-      <Card className="p-4 space-y-4">
+      <Card className="space-y-4 p-4">
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {MOODS.map((mood) => {
+          {MOODS.map(mood => {
             const Icon = mood.icon;
             return (
               <Button
@@ -109,10 +105,7 @@ export function JournalList() {
                 )}
               >
                 <Icon
-                  className={cn(
-                    "h-4 w-4",
-                    selectedMood === mood.value ? "text-primary-foreground" : mood.color
-                  )}
+                  className={cn("h-4 w-4", selectedMood === mood.value ? "text-primary-foreground" : mood.color)}
                 />
                 {mood.label}
               </Button>
@@ -123,14 +116,14 @@ export function JournalList() {
           <Textarea
             placeholder="How are you feeling right now?"
             value={newEntry}
-            onChange={(e) => setNewEntry(e.target.value)}
+            onChange={e => setNewEntry(e.target.value)}
             onKeyDown={handleKeyDown}
             className="min-h-[80px] resize-none pr-12"
           />
           <Button
             onClick={handleSubmit}
             disabled={!newEntry.trim() || createEntry.isPending}
-            className="absolute bottom-2 right-2 h-8 w-8 p-0"
+            className="absolute right-2 bottom-2 h-8 w-8 p-0"
             size="icon"
           >
             <Send className="h-4 w-4" />
@@ -138,62 +131,58 @@ export function JournalList() {
         </div>
       </Card>
 
-      <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+      <div className="flex-1 space-y-6 overflow-y-auto pr-2">
         {Object.entries(groupedEntries).map(([date, dayEntries]) => (
           <div key={date} className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground sticky top-0 bg-background py-2 z-10">
+            <h3 className="text-muted-foreground bg-background sticky top-0 z-10 py-2 text-sm font-medium">
               {new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </h3>
             <div className="space-y-4">
-              {dayEntries.map((entry) => (
-                <Card key={entry.id} className="relative group">
+              {dayEntries.map(entry => (
+                <Card key={entry.id} className="group relative">
                   <CardContent className="p-4 pt-4">
                     {editingId === entry.id ? (
                       <div className="space-y-2">
                         <Textarea
                           value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
+                          onChange={e => setEditContent(e.target.value)}
                           className="min-h-[100px]"
                         />
                         <div className="flex justify-end gap-2">
                           <Button size="sm" variant="ghost" onClick={cancelEditing}>
-                            <X className="h-4 w-4 mr-1" /> Cancel
+                            <X className="mr-1 h-4 w-4" /> Cancel
                           </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => saveEdit(entry.id)}
-                            disabled={updateEntry.isPending}
-                          >
-                            <Check className="h-4 w-4 mr-1" /> Save
+                          <Button size="sm" onClick={() => saveEdit(entry.id)} disabled={updateEntry.isPending}>
+                            <Check className="mr-1 h-4 w-4" /> Save
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <>
-                        <div className="flex justify-between items-start gap-4">
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               {entry.mood && (
                                 <span
                                   className={cn(
-                                    "text-xs px-2 py-0.5 rounded-full bg-muted font-medium",
-                                    MOODS.find((m) => m.value === entry.mood)?.color
+                                    "bg-muted rounded-full px-2 py-0.5 text-xs font-medium",
+                                    MOODS.find(m => m.value === entry.mood)?.color
                                   )}
                                 >
                                   {entry.mood}
                                 </span>
                               )}
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-muted-foreground text-xs">
                                 {new Date(entry.createdAt).toLocaleTimeString([], {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                 })}
                               </span>
                             </div>
-                            <p className="whitespace-pre-wrap text-sm leading-relaxed">{entry.content}</p>
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{entry.content}</p>
                           </div>
                         </div>
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-background/80 backdrop-blur-sm rounded-md">
+                        <div className="bg-background/80 absolute top-2 right-2 flex gap-1 rounded-md opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -205,7 +194,7 @@ export function JournalList() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive h-6 w-6"
                             onClick={() => handleDelete(entry.id)}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -220,7 +209,7 @@ export function JournalList() {
           </div>
         ))}
         {entries.length === 0 && (
-          <div className="text-center text-muted-foreground py-10">No entries yet. Start writing above!</div>
+          <div className="text-muted-foreground py-10 text-center">No entries yet. Start writing above!</div>
         )}
       </div>
     </div>

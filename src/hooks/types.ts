@@ -1,1 +1,6 @@
-export type QueryKey = "checkIns" | "dailyCheckIn" | "journalEntries" | `${string}-${string}-${string}`;
+export type QueryKey =
+  | "checkIns"
+  | "dailyCheckIn"
+  | "journalEntries"
+  | "encouragement"
+  | `${string}-${string}-${string}`;
