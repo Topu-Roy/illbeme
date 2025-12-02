@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { data: todayCheckIn } = useDailyCheckInQuery({ date: new Date() });
-  const { data: checkIns = [] } = useCheckInsQuery();
+  const { data: checkIns } = useCheckInsQuery();
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [sosMode, setSosMode] = useState<boolean>(false);
 
