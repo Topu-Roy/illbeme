@@ -1,52 +1,62 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { Flame, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { useCheckInsQuery, useDailyCheckInQuery } from "@/hooks/useCheckIn";
+import { DailyCheckIn } from "@/components/DailyCheckIn";
+import { Dashboard } from "@/components/Dashboard";
+import { JournalList } from "@/components/JournalList";
+import { SOSPanel } from "@/components/SOSPanel";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const { data: todayCheckIn } = useDailyCheckInQuery({ date: new Date() });
+  const { data: checkIns = [] } = useCheckInsQuery();
+  const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [sosMode, setSosMode] = useState<boolean>(false);
+
+  const lastCheckIn = checkIns[0]; // Ordered by date desc
+  const currentMood = todayCheckIn?.overallMood ?? lastCheckIn?.overallMood;
+  const isSad = currentMood === "Bad" || currentMood === "Awful";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image className="dark:invert" src="/next.svg" alt="Next.js logo" width={100} height={20} priority />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="bg-background min-h-screen p-8">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="space-y-4 pt-8">
+          <div className="flex justify-end gap-2">
+            {isSad && (
+              <Button
+                variant="destructive"
+                className="animate-in fade-in slide-in-from-top-4 gap-2 shadow-lg"
+                onClick={() => setSosMode(true)}
+              >
+                <Flame className="h-4 w-4" />
+                Burn Away Stress
+              </Button>
+            )}
+            <Link href="/memories">
+              <Button className="gap-2 bg-indigo-600 text-white shadow-lg transition-all duration-300 hover:bg-indigo-700 hover:shadow-xl">
+                <Sparkles className="h-4 w-4" />
+                View Memories & Learnings
+              </Button>
+            </Link>
+          </div>
+          <Dashboard onStartReflection={() => setIsCheckingIn(true)} />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image className="dark:invert" src="/vercel.svg" alt="Vercel logomark" width={16} height={16} />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid h-[600px] grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="h-full lg:col-span-3">
+            <JournalList />
+          </div>
         </div>
-      </main>
+      </div>
+
+      {isCheckingIn && (
+        <DailyCheckIn onComplete={() => setIsCheckingIn(false)} onCancel={() => setIsCheckingIn(false)} />
+      )}
+
+      <SOSPanel open={sosMode} onOpenChange={setSosMode} />
     </div>
   );
 }

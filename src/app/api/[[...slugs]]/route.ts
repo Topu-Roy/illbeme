@@ -1,0 +1,456 @@
+import { generateDayRating, generateEncouragement } from "@/server/ai-functions";
+import { db } from "@/server/db";
+import { Elysia } from "elysia";
+import { string } from "zod";
+import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/server";
+import { createDailyCheckInSchema, getDailyCheckInSchema, updateDailyCheckInSchema } from "./schema/check-in";
+import {
+  createJournalEntryInputSchema,
+  createJournalEntryOutputSchema,
+  deleteJournalEntrySchema,
+  getJournalEntryInputSchema,
+  journalEntryOutputSchema,
+  updateJournalEntryInputSchema,
+  updateJournalEntryOutputSchema,
+} from "./schema/journal";
+
+const app = new Elysia({ prefix: "/api" })
+  //* ------------------------------- Better-Auth handler -------------------------------
+  .mount(auth.handler)
+
+  // ---------------------------------- Public routes ----------------------------------
+  .get("/", "Hello Nextjs")
+
+  //* --------------------------------- Protected routes ---------------------------------
+  .guard({}, app =>
+    app
+      // Pass session downwards
+      .resolve(async () => {
+        const session = await getSession();
+        return { session };
+      })
+
+      // Check if session exists
+      .onBeforeHandle(({ session, set }) => {
+        if (!session) {
+          set.status = 401;
+          return "Unauthorized";
+        }
+      })
+
+      // Narrow the type (Type Safety)
+      .resolve(({ session }) => ({
+        session: session!, // At this point 'session' is guaranteed to exist
+      }))
+
+      //* ------------------------------------- Routes -------------------------------------
+      // Check-in routes
+      .group("/check-in", app =>
+        app
+          // Get daily check-in
+          .get(
+            "/",
+            async ({ body, session }) => {
+              const startOfDay = new Date(body.date);
+              startOfDay.setHours(0, 0, 0, 0);
+              const endOfDay = new Date(startOfDay);
+              endOfDay.setDate(endOfDay.getDate() + 1);
+
+              const checkIn = await db.dailyCheckIn.findFirst({
+                where: {
+                  userId: session.user.id,
+                  date: {
+                    gte: startOfDay,
+                    lt: endOfDay,
+                  },
+                },
+                include: {
+                  learnings: true,
+                  memories: true,
+                },
+              });
+
+              return checkIn;
+            },
+            {
+              body: getDailyCheckInSchema,
+              // TODO: Add response schema
+            }
+          )
+
+          // Create daily check-in
+          .post(
+            "/",
+            async ({ body, session }) => {
+              const { overallMood, emotions, lessonsLearned, learnings, memories } = body;
+
+              // Check if check-in already exists for today
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const tomorrow = new Date(today);
+              tomorrow.setDate(tomorrow.getDate() + 1);
+
+              const existingCheckIn = await db.dailyCheckIn.findFirst({
+                where: {
+                  userId: session.user.id,
+                  date: {
+                    gte: today,
+                    lt: tomorrow,
+                  },
+                },
+              });
+
+              if (existingCheckIn) {
+                throw new Error("Check-in already exists for today");
+              }
+
+              // Generate AI rating
+              const overallRating = await generateDayRating({
+                overallMood,
+                emotions,
+                lessonsLearned,
+                learnings,
+              });
+
+              const checkIn = await db.dailyCheckIn.create({
+                data: {
+                  overallMood,
+                  emotions,
+                  lessonsLearned,
+                  overallRating: overallRating.object,
+                  userId: session.user.id,
+                  date: new Date(),
+                  learnings: learnings
+                    ? {
+                        create: learnings.map(content => ({
+                          content,
+                          userId: session.user.id,
+                        })),
+                      }
+                    : undefined,
+                  memories: memories
+                    ? {
+                        create: memories.map(content => ({
+                          content,
+                          userId: session.user.id,
+                        })),
+                      }
+                    : undefined,
+                },
+                include: {
+                  learnings: true,
+                  memories: true,
+                },
+              });
+
+              return checkIn;
+            },
+            {
+              body: createDailyCheckInSchema,
+              // TODO: Add response schema
+            }
+          )
+
+          // Update daily check-in
+          .patch(
+            "/",
+            async ({ body, session }) => {
+              const { id, overallMood, emotions, lessonsLearned, learnings, memories } = body;
+
+              // Get the existing check-in
+              const existingCheckIn = await db.dailyCheckIn.findUnique({
+                where: { id },
+                include: { learnings: true, memories: true },
+              });
+
+              if (!existingCheckIn) {
+                throw new Error("Check-in not found");
+              }
+
+              if (existingCheckIn.userId !== session.user.id) {
+                throw new Error("Unauthorized");
+              }
+
+              // Check if the check-in date is today
+              const checkInDate = new Date(existingCheckIn.date);
+              checkInDate.setHours(0, 0, 0, 0);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+
+              if (checkInDate.getTime() !== today.getTime()) {
+                throw new Error("Can only edit today's check-in");
+              }
+
+              // Regenerate AI rating with updated data
+              const overallRating = await generateDayRating({
+                overallMood,
+                emotions,
+                lessonsLearned,
+                learnings,
+              });
+
+              // Delete existing learnings and create new ones
+              await db.checkInLearning.deleteMany({
+                where: { dailyCheckInId: id },
+              });
+
+              // Delete existing memories and create new ones
+              await db.checkInMemory.deleteMany({
+                where: { dailyCheckInId: id },
+              });
+
+              const updatedCheckIn = await db.dailyCheckIn.update({
+                where: { id },
+                data: {
+                  overallMood,
+                  emotions,
+                  lessonsLearned,
+                  overallRating: overallRating.object,
+                  learnings: learnings
+                    ? {
+                        create: learnings.map(content => ({
+                          content,
+                          userId: session.user.id,
+                        })),
+                      }
+                    : undefined,
+                  memories: memories
+                    ? {
+                        create: memories.map(content => ({
+                          content,
+                          userId: session.user.id,
+                        })),
+                      }
+                    : undefined,
+                },
+                include: {
+                  learnings: true,
+                  memories: true,
+                },
+              });
+
+              return updatedCheckIn;
+            },
+            {
+              body: updateDailyCheckInSchema,
+              // TODO: Add response schema
+            }
+          )
+
+          // Get paginated check-in // TODO: Pagination
+          .get(
+            "/paginated-check-ins",
+            async ({ session }) => {
+              const checkIn = await db.dailyCheckIn.findMany({
+                where: {
+                  userId: session.user.id,
+                },
+                include: {
+                  learnings: true,
+                  memories: true,
+                },
+                take: 10,
+                orderBy: {
+                  date: "desc",
+                },
+              });
+
+              return checkIn;
+            },
+            {
+              // body: getPaginatedCheckInSchema,
+              // TODO: Add response schema
+            }
+          )
+      )
+
+      // Journal routes
+      .group("/journal", app =>
+        app
+          // Create journal entry
+          .get(
+            "/",
+            async ({ body, session }) => {
+              const { date } = body;
+
+              const entry = await db.journalEntry.findMany({
+                where: {
+                  userId: session.user.id,
+                  createdAt: {
+                    gte: new Date(date),
+                    lt: new Date(date.setDate(date.getDate() + 1)), // TODO
+                  },
+                },
+                select: {
+                  id: true,
+                  content: true,
+                  mood: true,
+                  createdAt: true,
+                },
+              });
+
+              return entry;
+            },
+            {
+              body: getJournalEntryInputSchema,
+              response: journalEntryOutputSchema,
+            }
+          )
+
+          // Create journal entry
+          .post(
+            "/",
+            async ({ body, session }) => {
+              const { content, mood } = body;
+
+              const entry = await db.journalEntry.create({
+                data: {
+                  content,
+                  mood,
+                  userId: session.user.id,
+                },
+                select: {
+                  id: true,
+                  content: true,
+                  mood: true,
+                  createdAt: true,
+                },
+              });
+
+              return entry;
+            },
+            {
+              body: createJournalEntryInputSchema,
+              response: createJournalEntryOutputSchema,
+            }
+          )
+
+          // Delete journal entry
+          .delete(
+            "/",
+            async ({ body, session }) => {
+              const { id } = body;
+
+              const entry = await db.journalEntry.delete({
+                where: {
+                  id,
+                  userId: session.user.id,
+                },
+                select: {
+                  id: true,
+                },
+              });
+
+              return entry;
+            },
+            {
+              body: deleteJournalEntrySchema,
+              response: deleteJournalEntrySchema,
+            }
+          )
+
+          // Update journal entry
+          .patch(
+            "/",
+            async ({ body, session }) => {
+              const { id, content, mood } = body;
+              const today = new Date();
+
+              const entryDate = await db.journalEntry.findFirstOrThrow({
+                where: {
+                  id,
+                  userId: session.user.id,
+                },
+                select: {
+                  id: true,
+                  createdAt: true,
+                },
+              });
+
+              const isEntryCreatedToday =
+                entryDate.createdAt.getFullYear() === today.getFullYear() &&
+                entryDate.createdAt.getMonth() === today.getMonth() &&
+                entryDate.createdAt.getDate() === today.getDate();
+
+              if (!isEntryCreatedToday) {
+                throw new Error("Journal entry can only be updated the same day it was created");
+              }
+
+              const entry = await db.journalEntry.update({
+                where: {
+                  id,
+                  userId: session.user.id,
+                },
+                data: {
+                  content,
+                  mood,
+                },
+                select: {
+                  id: true,
+                  content: true,
+                  mood: true,
+                  createdAt: true,
+                },
+              });
+
+              return entry;
+            },
+            {
+              body: updateJournalEntryInputSchema,
+              response: updateJournalEntryOutputSchema,
+            }
+          )
+      )
+
+      // Get encouragement
+      .get(
+        "/encouragement",
+        async ({ session }) => {
+          // Fetch user's past positive check-ins, memories, and learnings
+          const pastCheckIns = await db.dailyCheckIn.findMany({
+            where: {
+              userId: session.user.id,
+              OR: [{ overallMood: "Great" }, { overallMood: "Good" }],
+            },
+            select: {
+              memories: {
+                select: {
+                  content: true,
+                },
+              },
+              learnings: {
+                select: {
+                  content: true,
+                },
+              },
+            },
+            orderBy: {
+              date: "desc",
+            },
+            take: 10, // Get last 10 positive check-ins
+          });
+
+          // Collect positive moments
+          const positiveMoments = pastCheckIns
+            .flatMap(checkIn => checkIn.memories.map(m => m.content))
+            .slice(0, 10);
+          const learnings = pastCheckIns.flatMap(checkIn => checkIn.learnings.map(l => l.content)).slice(0, 10);
+
+          const encouragement = await generateEncouragement({
+            memories: positiveMoments,
+            learnings,
+          });
+
+          return encouragement;
+        },
+        {
+          response: string(),
+        }
+      )
+  );
+
+export const GET = app.fetch;
+export const POST = app.fetch;
+
+export type app = typeof app;

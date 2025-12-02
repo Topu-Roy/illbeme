@@ -6,3 +6,180 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+generator prismabox {
+  provider                    = "prismabox"
+  typeboxImportDependencyName = "elysia"
+  typeboxImportVariableName   = "t"
+  inputModel                  = true
+  output                      = "../src/generated/prismabox"
+}
+
+enum Mood {
+  Great
+  Good
+  Okay
+  Bad
+  Awful
+}
+
+model JournalEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String
+  mood      Mood
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("journal_entry")
+}
+
+model DailyCheckIn {
+  id             String            @id @default(uuid())
+  userId         String
+  date           DateTime          @default(now())
+  overallMood    Mood
+  emotions       Json // Example: { "Happy": 2, "Anxious": 1 }
+  lessonsLearned String?
+  overallRating  Int
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  learnings      CheckInLearning[]
+  memories       CheckInMemory[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One check-in per user per day
+  @@unique([userId, date])
+  @@index([userId])
+  @@map("daily_reflection")
+}
+
+model CheckInMemory {
+  id             String   @id @default(uuid())
+  userId         String
+  dailyCheckInId String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyCheckIn DailyCheckIn @relation(fields: [dailyCheckInId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dailyCheckInId])
+  @@map("memory")
+}
+
+model CheckInLearning {
+  id             String   @id @default(uuid())
+  userId         String
+  dailyCheckInId String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyCheckIn DailyCheckIn @relation(fields: [dailyCheckInId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([dailyCheckInId])
+  @@map("learning")
+}
+
+model User {
+  id              String            @id @default(uuid())
+  name            String
+  email           String
+  emailVerified   Boolean           @default(false)
+  image           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  role            String?
+  banned          Boolean?          @default(false)
+  banReason       String?
+  banExpires      DateTime?
+  sessions        Session[]
+  accounts        Account[]
+  passkeys        Passkey[]
+  journalEntries  JournalEntry[]
+  dailyCheckIns   DailyCheckIn[]
+  learnings       CheckInLearning[]
+  checkInMemories CheckInMemory[]
+
+  @@map("user")
+}
+
+model Session {
+  id             String   @id @default(uuid())
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  impersonatedBy String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model Passkey {
+  id           String   @id
+  name         String?
+  publicKey    String
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
+}
