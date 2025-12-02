@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Flame, RotateCcw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Flame, Sparkles, RotateCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface SOSPanelProps {
   open: boolean;
@@ -50,14 +50,14 @@ export function SOSPanel({ open, onOpenChange }: SOSPanelProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl border-orange-200 dark:border-orange-900/50">
-        <div className="absolute inset-0 bg-linear-to-br from-orange-500/5 via-transparent to-red-500/5 pointer-events-none rounded-lg" />
+      <DialogContent className="border-orange-200 sm:max-w-2xl dark:border-orange-900/50">
+        <div className="pointer-events-none absolute inset-0 rounded-lg bg-linear-to-br from-orange-500/5 via-transparent to-red-500/5" />
 
         <DialogHeader className="relative">
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Flame className={`h-6 w-6 ${isBurning ? "animate-pulse text-orange-600" : "text-orange-500"}`} />
             The Burn Page
-            {burned && <Sparkles className="h-5 w-5 text-yellow-500 animate-pulse ml-auto" />}
+            {burned && <Sparkles className="ml-auto h-5 w-5 animate-pulse text-yellow-500" />}
           </DialogTitle>
           <DialogDescription className="text-base">
             Release what&apos;s weighing you down. Write it out, then watch it disappear.
@@ -68,25 +68,25 @@ export function SOSPanel({ open, onOpenChange }: SOSPanelProps) {
           {!burned ? (
             <div
               className={`relative transition-all duration-2000 ${
-                isBurning ? "opacity-0 blur-2xl scale-90 rotate-1" : "opacity-100 scale-100 rotate-0"
+                isBurning ? "scale-90 rotate-1 opacity-0 blur-2xl" : "scale-100 rotate-0 opacity-100"
               }`}
             >
               <Textarea
                 value={burnText}
-                onChange={(e) => setBurnText(e.target.value)}
+                onChange={e => setBurnText(e.target.value)}
                 placeholder="Let it all out... What's bothering you? What do you need to release?"
-                className="min-h-[200px] resize-none border-orange-100 dark:border-orange-900/50 focus-visible:ring-orange-500 text-base"
+                className="min-h-[200px] resize-none border-orange-100 text-base focus-visible:ring-orange-500 dark:border-orange-900/50"
                 disabled={isBurning}
               />
               {isBurning && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="text-6xl animate-bounce">🔥</div>
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <div className="animate-bounce text-6xl">🔥</div>
                 </div>
               )}
             </div>
           ) : (
-            <div className="min-h-[200px] flex flex-col items-center justify-center gap-4 text-center animate-in zoom-in duration-700">
-              <div className="text-5xl mb-2">✨</div>
+            <div className="animate-in zoom-in flex min-h-[200px] flex-col items-center justify-center gap-4 text-center duration-700">
+              <div className="mb-2 text-5xl">✨</div>
               <div className="space-y-2">
                 <p className="text-xl font-medium">It&apos;s gone now.</p>
                 <p className="text-muted-foreground">Take a deep breath. You&apos;ve let it go.</p>
@@ -94,22 +94,22 @@ export function SOSPanel({ open, onOpenChange }: SOSPanelProps) {
             </div>
           )}
 
-          <div className="text-center text-sm text-muted-foreground pt-2">
+          <div className="text-muted-foreground pt-2 text-center text-sm">
             <p>💭 This space is private. Nothing is saved. Just let go.</p>
           </div>
         </div>
 
-        <DialogFooter className="flex gap-3 flex-col sm:flex-row">
+        <DialogFooter className="flex flex-col gap-3 sm:flex-row">
           {!burned ? (
             <>
-              <Button variant="ghost" onClick={handleClose} className="w-full sm:w-auto order-2 sm:order-1">
+              <Button variant="ghost" onClick={handleClose} className="order-2 w-full sm:order-1 sm:w-auto">
                 Skip
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleBurn}
                 disabled={!burnText.trim() || isBurning}
-                className="w-full sm:flex-1 gap-2 text-base h-11 order-1 sm:order-2"
+                className="order-1 h-11 w-full gap-2 text-base sm:order-2 sm:flex-1"
                 size="lg"
               >
                 <Flame className={`h-5 w-5 ${isBurning ? "animate-ping" : ""}`} />
@@ -118,13 +118,13 @@ export function SOSPanel({ open, onOpenChange }: SOSPanelProps) {
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={handleReset} className="w-full sm:flex-1 gap-2">
+              <Button variant="outline" onClick={handleReset} className="w-full gap-2 sm:flex-1">
                 <RotateCcw className="h-4 w-4" />
                 Release More
               </Button>
               <Button
                 onClick={handleClose}
-                className="w-full sm:flex-1 gap-2 bg-linear-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+                className="w-full gap-2 bg-linear-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 sm:flex-1"
               >
                 <Sparkles className="h-4 w-4" />
                 Continue
