@@ -1,10 +1,4 @@
-import { generateDayRating, generateEncouragement } from "@/server/ai-functions";
-import { db } from "@/server/db";
-import { Elysia } from "elysia";
-import { string } from "zod";
-import { auth } from "@/lib/auth";
-import { getSession } from "@/lib/auth/server";
-import { createDailyCheckInSchema, getDailyCheckInSchema, updateDailyCheckInSchema } from "./schema/check-in";
+import { createDailyCheckInSchema, getDailyCheckInSchema, updateDailyCheckInSchema } from "@/schema/check-in";
 import {
   createJournalEntryInputSchema,
   createJournalEntryOutputSchema,
@@ -13,7 +7,13 @@ import {
   journalEntryOutputSchema,
   updateJournalEntryInputSchema,
   updateJournalEntryOutputSchema,
-} from "./schema/journal";
+} from "@/schema/journal";
+import { generateDayRating, generateEncouragement } from "@/server/ai-functions";
+import { db } from "@/server/db";
+import { Elysia } from "elysia";
+import { string } from "zod";
+import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/auth/server";
 
 const app = new Elysia({ prefix: "/api" })
   //* ------------------------------- Better-Auth handler -------------------------------
