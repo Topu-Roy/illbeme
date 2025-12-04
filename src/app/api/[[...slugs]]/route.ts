@@ -451,6 +451,47 @@ const app = new Elysia({ prefix: "/api" })
           )
       )
 
+      .get("/memories_and_learnings", async ({ session }) => {
+        const memories = await db.checkInMemory.findMany({
+          where: {
+            dailyCheckIn: {
+              userId: session.user.id,
+            },
+          },
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 10,
+        });
+
+        const learnings = await db.checkInLearning.findMany({
+          where: {
+            dailyCheckIn: {
+              userId: session.user.id,
+            },
+          },
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 10,
+        });
+
+        return {
+          memories,
+          learnings,
+        };
+      })
+
       // Get encouragement
       .get(
         "/encouragement",

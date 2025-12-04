@@ -1,53 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { Mood } from "@/generated/prisma/client";
+import { useRef } from "react";
 import { ArrowLeft, Brain, Search, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useCheckInsQuery } from "@/hooks/useCheckIn";
-import { MemoryCard } from "@/components/MemoryCard";
+import { useRouter } from "next/navigation";
+import { useMemoriesAndLearningsQuery } from "@/hooks/memoriesAndLearnings";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 export default function MemoriesPage() {
-  const { data: checkIns, isLoading } = useCheckInsQuery();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMood, setSelectedMood] = useState<Mood | "All">("All");
-
-  const moods: (Mood | "All")[] = ["All", "Great", "Good", "Okay", "Bad", "Awful"];
-
-  const filteredCheckIns = useMemo(() => {
-    let filtered = checkIns?.data?.filter(
-      checkIn => checkIn.lessonsLearned ?? (checkIn.learnings && checkIn.learnings.length > 0)
-    );
-
-    if (selectedMood !== "All") {
-      filtered = filtered?.filter(checkIn => checkIn.overallMood === selectedMood);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered?.filter(checkIn => {
-        const lessonsMatch = checkIn.lessonsLearned?.toLowerCase().includes(query);
-        const learningsMatch = checkIn.learnings?.some(l => l.content.toLowerCase().includes(query));
-        return lessonsMatch ?? learningsMatch;
-      });
-    }
-
-    return filtered;
-  }, [checkIns, selectedMood, searchQuery]);
+  const { data: memoriesAndLearnings, isLoading } = useMemoriesAndLearningsQuery();
+  const searchQuery = useRef<HTMLInputElement>(null); // TODO: Add search functionality
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-8">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Header */}
         <div className="space-y-4">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="-ml-2 gap-2 text-slate-600 hover:text-slate-900">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </Link>
+          <Button
+            onClick={() => router.back()}
+            variant="ghost"
+            size="sm"
+            className="-ml-2 gap-2 text-slate-600 hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
 
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-2">
@@ -63,7 +43,9 @@ export default function MemoriesPage() {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
-              <p className="text-3xl font-bold text-slate-900">{filteredCheckIns?.length ?? 0}</p>
+              <p className="text-3xl font-bold text-slate-900">
+                {memoriesAndLearnings?.data?.memories.length ?? 0}
+              </p>
               <p className="text-sm text-slate-500">Total memories</p>
             </div>
           </div>
@@ -74,32 +56,10 @@ export default function MemoriesPage() {
           <div className="relative">
             <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transform text-slate-400" />
             <Input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              ref={searchQuery}
               placeholder="Search memories and learnings..."
               className="h-12 border-slate-200 bg-slate-50 pl-12 text-base focus-visible:ring-slate-900"
             />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="mr-2 text-sm font-medium text-slate-700">Filter:</span>
-            <div className="flex flex-wrap gap-2">
-              {moods.map(mood => (
-                <Button
-                  key={mood}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedMood(mood)}
-                  className={`transition-all ${
-                    selectedMood === mood
-                      ? "border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:text-white"
-                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  {mood}
-                </Button>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -111,7 +71,7 @@ export default function MemoriesPage() {
               <p className="font-medium text-slate-600">Loading your memories...</p>
             </div>
           </div>
-        ) : filteredCheckIns?.length === 0 ? (
+        ) : memoriesAndLearnings?.data?.memories.length === 0 ? (
           <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-16 text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-slate-100">
               <Brain className="h-10 w-10 text-slate-400" />
@@ -119,7 +79,7 @@ export default function MemoriesPage() {
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-slate-900">No memories found</h3>
               <p className="mx-auto max-w-md text-slate-600">
-                {searchQuery || selectedMood !== "All"
+                {searchQuery
                   ? "Try adjusting your filters or search query to find what you're looking for."
                   : "Start your journey by completing daily check-ins and recording your learnings."}
               </p>
@@ -133,8 +93,15 @@ export default function MemoriesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredCheckIns?.map(checkIn => (
-              <MemoryCard key={checkIn.id} checkIn={checkIn} />
+            {memoriesAndLearnings?.data?.memories.map(memory => (
+              <Card key={memory.id}>
+                <CardHeader>
+                  <CardTitle>{`${memory.createdAt.getFullYear()}-${memory.createdAt.getMonth() + 1}-${memory.createdAt.getDate()}`}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>{memory.content}</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}

@@ -3,4 +3,5 @@ export type QueryKey =
   | "dailyCheckIn"
   | "journalEntries"
   | "encouragement"
+  | "memoriesAndLearnings"
   | `${string}-${string}-${string}`;
