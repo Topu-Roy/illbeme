@@ -5,7 +5,7 @@ import type { createDailyCheckInSchema, updateDailyCheckInSchema } from "@/schem
 import type z from "zod";
 import { api } from "@/lib/eden";
 import { queryClient } from "@/lib/query/query-client";
-import { formatDateDDMMYYYY } from "./helpers";
+import { formatDateYYYYMMDD } from "./helpers";
 import type { QueryKey } from "./types";
 
 export function useCheckInsQuery() {
@@ -16,7 +16,7 @@ export function useCheckInsQuery() {
 }
 
 export function useDailyCheckInQuery({ date }: { date: Date }) {
-  const formattedDate = formatDateDDMMYYYY(date);
+  const formattedDate = formatDateYYYYMMDD(date);
 
   return useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
@@ -29,7 +29,7 @@ export function useCreateDailyCheckInMutation() {
   return useMutation({
     mutationFn: (body: z.infer<typeof createDailyCheckInSchema>) => api.check_in.post(body),
     onSuccess: ({ data }) => {
-      const formattedDate = formatDateDDMMYYYY(data ? data.date : new Date());
+      const formattedDate = formatDateYYYYMMDD(data ? data.date : new Date());
       void queryClient.invalidateQueries({ queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[] });
       void queryClient.invalidateQueries({ queryKey: ["checkIns"] satisfies QueryKey[] });
     },
@@ -40,7 +40,7 @@ export function useUpdateDailyCheckInMutation() {
   return useMutation({
     mutationFn: async (body: z.infer<typeof updateDailyCheckInSchema>) => await api.check_in.patch(body),
     onSuccess: ({ data }) => {
-      const formattedDate = formatDateDDMMYYYY(data ? data.date : new Date());
+      const formattedDate = formatDateYYYYMMDD(data ? data.date : new Date());
       void queryClient.invalidateQueries({ queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[] });
       void queryClient.invalidateQueries({ queryKey: ["checkIns"] satisfies QueryKey[] });
     },

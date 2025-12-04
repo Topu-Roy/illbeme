@@ -9,11 +9,11 @@ import type {
 import type z from "zod";
 import { api } from "@/lib/eden";
 import { queryClient } from "@/lib/query/query-client";
-import { formatDateDDMMYYYY } from "./helpers";
+import { formatDateYYYYMMDD } from "./helpers";
 import type { QueryKey } from "./types";
 
 export function useJournalEntriesQuery({ date }: { date: Date }) {
-  const formattedDate = formatDateDDMMYYYY(date);
+  const formattedDate = formatDateYYYYMMDD(date);
 
   return useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
@@ -27,7 +27,7 @@ export function useCreateJournalEntryMutation() {
   return useMutation({
     mutationFn: (body: z.infer<typeof createJournalEntryInputSchema>) => api.journal.post(body),
     onSuccess: ({ data }) => {
-      const formattedDate = formatDateDDMMYYYY(data ? data.createdAt : new Date());
+      const formattedDate = formatDateYYYYMMDD(data ? data.createdAt : new Date());
       void queryClient.invalidateQueries({ queryKey: ["journalEntries", formattedDate] satisfies QueryKey[] });
     },
   });
@@ -36,9 +36,8 @@ export function useCreateJournalEntryMutation() {
 export function useDeleteJournalEntryMutation() {
   return useMutation({
     mutationFn: (body: z.infer<typeof deleteJournalEntrySchema>) => api.journal.delete(body),
-    onSuccess: ({ data }) => {
-      const formattedDate = formatDateDDMMYYYY(data ? data.createdAt : new Date());
-      void queryClient.invalidateQueries({ queryKey: ["journalEntries", formattedDate] satisfies QueryKey[] });
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["journalEntries"] satisfies QueryKey[] });
     },
   });
 }
@@ -47,7 +46,7 @@ export function useUpdateJournalEntryMutation() {
   return useMutation({
     mutationFn: (body: z.infer<typeof updateJournalEntryInputSchema>) => api.journal.patch(body),
     onSuccess: ({ data }) => {
-      const formattedDate = formatDateDDMMYYYY(data ? data.createdAt : new Date());
+      const formattedDate = formatDateYYYYMMDD(data ? data.createdAt : new Date());
       void queryClient.invalidateQueries({ queryKey: ["journalEntries", formattedDate] satisfies QueryKey[] });
     },
   });
