@@ -51,49 +51,84 @@ const app = new Elysia({ prefix: "/api" })
 
       //* ------------------------------------- Routes -------------------------------------
 
-      //* "/memories_and_learnings" Memories and learnings routes
-      .get("/memories_and_learnings", async ({ session }) => {
-        const memories = await db.checkInMemory.findMany({
-          where: {
-            dailyCheckIn: {
-              userId: session.user.id,
-            },
-          },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 10,
-        });
+      // "/memories" Group
+      .group("/memories", app =>
+        app
+          // "/memories" Get memories
+          .get("/", async ({ session }) => {
+            const memories = await db.checkInMemory.findMany({
+              where: {
+                dailyCheckIn: {
+                  userId: session.user.id,
+                },
+              },
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 10,
+            });
 
-        const learnings = await db.checkInLearning.findMany({
-          where: {
-            dailyCheckIn: {
-              userId: session.user.id,
-            },
-          },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 10,
-        });
+            return memories;
+          })
 
-        return {
-          memories,
-          learnings,
-        };
-      })
+          // "/memories/get_total" Get total memories
+          .get("/get_total", async ({ session }) => {
+            const totalMemories = await db.checkInMemory.count({
+              where: {
+                dailyCheckIn: {
+                  userId: session.user.id,
+                },
+              },
+            });
 
-      //* "/encouragement" Encouragement routes
+            return totalMemories;
+          })
+      )
+
+      // "/learnings" Group
+      .group("/learnings", app =>
+        app
+          // "/learnings" Get learnings
+          .get("/", async ({ session }) => {
+            const learnings = await db.checkInLearning.findMany({
+              where: {
+                dailyCheckIn: {
+                  userId: session.user.id,
+                },
+              },
+              select: {
+                id: true,
+                content: true,
+                createdAt: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 10,
+            });
+
+            return learnings;
+          })
+
+          // "/learnings/get_total" Get total learnings
+          .get("/get_total", async ({ session }) => {
+            const totalLearnings = await db.checkInLearning.count({
+              where: {
+                dailyCheckIn: {
+                  userId: session.user.id,
+                },
+              },
+            });
+            return totalLearnings;
+          })
+      )
+
+      // "/encouragement" Encouragement routes
       .get(
         "/encouragement",
         async ({ session }) => {
