@@ -20,18 +20,16 @@ const app = new Elysia({ prefix: "/api" })
   //* ------------------------------- Better-Auth handler -------------------------------
   .mount(auth.handler)
 
-  .use(
-    logger({
-      level: "debug",
-    })
-  )
+  //* -------------------------------------- Logger --------------------------------------
+  .use(logger({ level: "debug" }))
 
   // ---------------------------------- Public routes ----------------------------------
-  .get("/", "Hello Nextjs")
+  .guard({}, app => app.get("/", "Hello Nextjs"))
 
-  //* --------------------------------- Protected routes ---------------------------------
+  //* -------------------------------- Protected routes --------------------------------
   .guard({}, app =>
     app
+      //* ---------------------------------- Auth Check ----------------------------------
       // Pass session downwards
       .resolve(async () => {
         const session = await getSession();
@@ -52,10 +50,99 @@ const app = new Elysia({ prefix: "/api" })
       }))
 
       //* ------------------------------------- Routes -------------------------------------
-      // Check-in routes
+
+      //* "/memories_and_learnings" Memories and learnings routes
+      .get("/memories_and_learnings", async ({ session }) => {
+        const memories = await db.checkInMemory.findMany({
+          where: {
+            dailyCheckIn: {
+              userId: session.user.id,
+            },
+          },
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 10,
+        });
+
+        const learnings = await db.checkInLearning.findMany({
+          where: {
+            dailyCheckIn: {
+              userId: session.user.id,
+            },
+          },
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 10,
+        });
+
+        return {
+          memories,
+          learnings,
+        };
+      })
+
+      //* "/encouragement" Encouragement routes
+      .get(
+        "/encouragement",
+        async ({ session }) => {
+          // Fetch user's past positive check-ins, memories, and learnings
+          const pastCheckIns = await db.dailyCheckIn.findMany({
+            where: {
+              userId: session.user.id,
+              OR: [{ overallMood: "Great" }, { overallMood: "Good" }],
+            },
+            select: {
+              memories: {
+                select: {
+                  content: true,
+                },
+              },
+              learnings: {
+                select: {
+                  content: true,
+                },
+              },
+            },
+            orderBy: {
+              date: "desc",
+            },
+            take: 10, // Get last 10 positive check-ins
+          });
+
+          // Collect positive moments
+          const positiveMoments = pastCheckIns
+            .flatMap(checkIn => checkIn.memories.map(m => m.content))
+            .slice(0, 10);
+          const learnings = pastCheckIns.flatMap(checkIn => checkIn.learnings.map(l => l.content)).slice(0, 10);
+
+          const encouragement = await generateEncouragement({
+            memories: positiveMoments,
+            learnings,
+          });
+
+          return encouragement;
+        },
+        {
+          response: string(),
+        }
+      )
+
+      //* Check-in routes
       .group("/check_in", app =>
         app
-          // Get daily check-in
+          // "/check_in" Get daily check-in
           .get(
             "/",
             async ({ query, session }) => {
@@ -101,7 +188,7 @@ const app = new Elysia({ prefix: "/api" })
             }
           )
 
-          // Create daily check-in
+          // "/check_in" Create daily check-in
           .post(
             "/",
             async ({ body, session }) => {
@@ -190,7 +277,7 @@ const app = new Elysia({ prefix: "/api" })
             }
           )
 
-          // Update daily check-in
+          // "/check_in" Update daily check-in
           .patch(
             "/",
             async ({ body, session }) => {
@@ -276,7 +363,7 @@ const app = new Elysia({ prefix: "/api" })
             }
           )
 
-          // Get paginated check-in // TODO: Pagination
+          // "/check_in/paginated_check_ins" Get paginated check-in // TODO: Pagination
           .get("/paginated_check_ins", async ({ session }) => {
             const checkIn = await db.dailyCheckIn.findMany({
               where: {
@@ -312,10 +399,10 @@ const app = new Elysia({ prefix: "/api" })
           })
       )
 
-      // Journal routes
+      //* Journal routes
       .group("/journal", app =>
         app
-          // Get journal entry
+          // "/journal" Get journal entry
           .get(
             "/",
             async ({ query, session }) => {
@@ -345,7 +432,7 @@ const app = new Elysia({ prefix: "/api" })
             }
           )
 
-          // Create journal entry
+          // "/journal" Create journal entry
           .post(
             "/",
             async ({ body, session }) => {
@@ -373,7 +460,7 @@ const app = new Elysia({ prefix: "/api" })
             }
           )
 
-          // Delete journal entry
+          // "/journal" Delete journal entry
           .delete(
             "/",
             async ({ body, session }) => {
@@ -398,7 +485,7 @@ const app = new Elysia({ prefix: "/api" })
             }
           )
 
-          // Update journal entry
+          // "/journal" Update journal entry
           .patch(
             "/",
             async ({ body, session }) => {
@@ -449,93 +536,6 @@ const app = new Elysia({ prefix: "/api" })
               response: updateJournalEntryOutputSchema,
             }
           )
-      )
-
-      .get("/memories_and_learnings", async ({ session }) => {
-        const memories = await db.checkInMemory.findMany({
-          where: {
-            dailyCheckIn: {
-              userId: session.user.id,
-            },
-          },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 10,
-        });
-
-        const learnings = await db.checkInLearning.findMany({
-          where: {
-            dailyCheckIn: {
-              userId: session.user.id,
-            },
-          },
-          select: {
-            id: true,
-            content: true,
-            createdAt: true,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          take: 10,
-        });
-
-        return {
-          memories,
-          learnings,
-        };
-      })
-
-      // Get encouragement
-      .get(
-        "/encouragement",
-        async ({ session }) => {
-          // Fetch user's past positive check-ins, memories, and learnings
-          const pastCheckIns = await db.dailyCheckIn.findMany({
-            where: {
-              userId: session.user.id,
-              OR: [{ overallMood: "Great" }, { overallMood: "Good" }],
-            },
-            select: {
-              memories: {
-                select: {
-                  content: true,
-                },
-              },
-              learnings: {
-                select: {
-                  content: true,
-                },
-              },
-            },
-            orderBy: {
-              date: "desc",
-            },
-            take: 10, // Get last 10 positive check-ins
-          });
-
-          // Collect positive moments
-          const positiveMoments = pastCheckIns
-            .flatMap(checkIn => checkIn.memories.map(m => m.content))
-            .slice(0, 10);
-          const learnings = pastCheckIns.flatMap(checkIn => checkIn.learnings.map(l => l.content)).slice(0, 10);
-
-          const encouragement = await generateEncouragement({
-            memories: positiveMoments,
-            learnings,
-          });
-
-          return encouragement;
-        },
-        {
-          response: string(),
-        }
       )
   );
 
