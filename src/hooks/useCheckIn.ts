@@ -21,7 +21,7 @@ export function useDailyCheckInQuery({ date }: { date: Date }) {
   return useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: ["dailyCheckIn", formattedDate] satisfies QueryKey[],
-    queryFn: () => api.check_in.get({ query: { date } }),
+    queryFn: () => api.check_in.get({ query: { date: formattedDate } }),
   });
 }
 

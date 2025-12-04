@@ -10,6 +10,7 @@ import {
 } from "@/schema/journal";
 import { generateDayRating, generateEncouragement } from "@/server/ai-functions";
 import { db } from "@/server/db";
+import { logger } from "@bogeychan/elysia-logger";
 import { Elysia } from "elysia";
 import { string } from "zod";
 import { auth } from "@/lib/auth";
@@ -18,6 +19,12 @@ import { getSession } from "@/lib/auth/server";
 const app = new Elysia({ prefix: "/api" })
   //* ------------------------------- Better-Auth handler -------------------------------
   .mount(auth.handler)
+
+  .use(
+    logger({
+      level: "debug",
+    })
+  )
 
   // ---------------------------------- Public routes ----------------------------------
   .get("/", "Hello Nextjs")
@@ -51,8 +58,8 @@ const app = new Elysia({ prefix: "/api" })
           // Get daily check-in
           .get(
             "/",
-            async ({ params, session }) => {
-              const startOfDay = new Date(params.date);
+            async ({ query, session }) => {
+              const startOfDay = new Date(query.date);
               startOfDay.setHours(0, 0, 0, 0);
               const endOfDay = new Date(startOfDay);
               endOfDay.setDate(endOfDay.getDate() + 1);
@@ -90,7 +97,7 @@ const app = new Elysia({ prefix: "/api" })
               return checkIn;
             },
             {
-              params: getDailyCheckInSchema,
+              query: getDailyCheckInSchema,
             }
           )
 
@@ -311,7 +318,9 @@ const app = new Elysia({ prefix: "/api" })
           // Get journal entry
           .get(
             "/",
-            async ({ query: { date }, session }) => {
+            async ({ query, session }) => {
+              const date = new Date(query.date);
+
               const entry = await db.journalEntry.findMany({
                 where: {
                   userId: session.user.id,

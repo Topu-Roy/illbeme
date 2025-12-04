@@ -1,7 +1,7 @@
 import { array, date, enum as enum_, object, string } from "zod";
 
 export const getJournalEntryInputSchema = object({
-  date: date(),
+  date: string(),
 });
 
 export const journalEntryOutputSchema = array(

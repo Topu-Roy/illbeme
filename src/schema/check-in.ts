@@ -1,7 +1,7 @@
-import { array, date, enum as enum_, number, object, record, string } from "zod/v4";
+import { array, enum as enum_, number, object, record, string } from "zod/v4";
 
 export const getDailyCheckInSchema = object({
-  date: date(),
+  date: string(),
 });
 
 export const createDailyCheckInSchema = object({

@@ -18,7 +18,7 @@ export function useJournalEntriesQuery({ date }: { date: Date }) {
   return useQuery({
     // eslint-disable-next-line @tanstack/query/exhaustive-deps
     queryKey: ["journalEntries", formattedDate] satisfies QueryKey[],
-    queryFn: () => api.journal.get({ query: { date: date } }),
+    queryFn: () => api.journal.get({ query: { date: formattedDate } }),
     enabled: Boolean(date),
   });
 }
