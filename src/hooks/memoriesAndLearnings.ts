@@ -12,7 +12,7 @@ export function useMemoriesQuery({ page }: { page?: number }) {
 export function useMemoriesTotalCountQuery() {
   return useQuery({
     queryKey: ["memories_total_count"] satisfies QueryKey[],
-    queryFn: () => api.memories.get(),
+    queryFn: () => api.memories.get_total.get(),
   });
 }
 
@@ -26,6 +26,6 @@ export function useLearningsQuery({ page }: { page?: number }) {
 export function useLearningsTotalCountQuery() {
   return useQuery({
     queryKey: ["learnings_total_count"] satisfies QueryKey[],
-    queryFn: () => api.learnings.get(),
+    queryFn: () => api.learnings.get_total.get(),
   });
 }

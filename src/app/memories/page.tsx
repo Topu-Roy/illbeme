@@ -1,16 +1,15 @@
 "use client";
 
 import { useRef } from "react";
-import { ArrowLeft, Brain, Search, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { ArrowLeft, Brain, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemoriesAndLearningsQuery } from "@/hooks/memoriesAndLearnings";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LearningsTab } from "./_components/tabs/learningsTab";
+import { MemoriesTab } from "./_components/tabs/memoriesTab";
 
 export default function MemoriesPage() {
-  const { data: memoriesAndLearnings, isLoading } = useMemoriesAndLearningsQuery();
   const searchQuery = useRef<HTMLInputElement>(null); // TODO: Add search functionality
   const router = useRouter();
 
@@ -43,9 +42,7 @@ export default function MemoriesPage() {
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
-              <p className="text-3xl font-bold text-slate-900">
-                {memoriesAndLearnings?.data?.memories.length ?? 0}
-              </p>
+              <p className="text-3xl font-bold text-slate-900">0</p>
               <p className="text-sm text-slate-500">Total memories</p>
             </div>
           </div>
@@ -64,7 +61,7 @@ export default function MemoriesPage() {
         </div>
 
         {/* Memories Grid */}
-        {isLoading ? (
+        {/* {isLoading ? (
           <div className="flex items-center justify-center py-24">
             <div className="space-y-4 text-center">
               <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900"></div>
@@ -91,20 +88,19 @@ export default function MemoriesPage() {
               </Button>
             </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {memoriesAndLearnings?.data?.memories.map(memory => (
-              <Card key={memory.id}>
-                <CardHeader>
-                  <CardTitle>{`${memory.createdAt.getFullYear()}-${memory.createdAt.getMonth() + 1}-${memory.createdAt.getDate()}`}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>{memory.content}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+        ) : ( */}
+        <Tabs defaultValue="memories" className="w-4xl">
+          <TabsList>
+            <TabsTrigger value="memories">Memories</TabsTrigger>
+            <TabsTrigger value="learnings">Learnings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="memories">
+            <MemoriesTab />
+          </TabsContent>
+          <TabsContent value="learnings">
+            <LearningsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
