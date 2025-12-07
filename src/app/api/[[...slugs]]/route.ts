@@ -227,7 +227,7 @@ const app = new Elysia({ prefix: "/api" })
           .post(
             "/",
             async ({ body, session }) => {
-              const { overallMood, emotions, lessonsLearned, learnings, memories } = body;
+              const { overallMood, emotions, learnings, memories } = body;
 
               // Check if check-in already exists for today
               const today = new Date();
@@ -253,7 +253,6 @@ const app = new Elysia({ prefix: "/api" })
               const overallRating = await generateDayRating({
                 overallMood,
                 emotions,
-                lessonsLearned,
                 learnings,
               });
 
@@ -261,7 +260,6 @@ const app = new Elysia({ prefix: "/api" })
                 data: {
                   overallMood,
                   emotions,
-                  lessonsLearned,
                   overallRating: overallRating.object,
                   userId: session.user.id,
                   date: new Date(),
@@ -286,7 +284,6 @@ const app = new Elysia({ prefix: "/api" })
                   id: true,
                   overallMood: true,
                   emotions: true,
-                  lessonsLearned: true,
                   overallRating: true,
                   date: true,
                   learnings: {
@@ -308,7 +305,6 @@ const app = new Elysia({ prefix: "/api" })
             },
             {
               body: createDailyCheckInSchema,
-              // TODO: Add response schema
             }
           )
 
@@ -316,7 +312,7 @@ const app = new Elysia({ prefix: "/api" })
           .patch(
             "/",
             async ({ body, session }) => {
-              const { id, overallMood, emotions, lessonsLearned, learnings, memories } = body;
+              const { id, overallMood, emotions, learnings, memories } = body;
 
               // Get the existing check-in
               const existingCheckIn = await db.dailyCheckIn.findUnique({
@@ -346,7 +342,6 @@ const app = new Elysia({ prefix: "/api" })
               const overallRating = await generateDayRating({
                 overallMood,
                 emotions,
-                lessonsLearned,
                 learnings,
               });
 
@@ -365,7 +360,6 @@ const app = new Elysia({ prefix: "/api" })
                 data: {
                   overallMood,
                   emotions,
-                  lessonsLearned,
                   overallRating: overallRating.object,
                   learnings: learnings
                     ? {
@@ -384,9 +378,9 @@ const app = new Elysia({ prefix: "/api" })
                       }
                     : undefined,
                 },
-                include: {
-                  learnings: true,
-                  memories: true,
+                select: {
+                  id: true,
+                  date: true,
                 },
               });
 
@@ -394,7 +388,6 @@ const app = new Elysia({ prefix: "/api" })
             },
             {
               body: updateDailyCheckInSchema,
-              // TODO: Add response schema
             }
           )
 

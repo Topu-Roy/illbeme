@@ -1,34 +1,32 @@
+"use client";
+
+import { useState } from "react";
+import { useAtom } from "jotai";
 import { Plus, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { memoriesAtom } from "./wizardState";
 
-interface MemoriesStepProps {
-  memories: string[];
-  setMemories: React.Dispatch<React.SetStateAction<string[]>>;
-  memoryInput: string;
-  setMemoryInput: React.Dispatch<React.SetStateAction<string>>;
-  handleAddItem: (
-    list: string[],
-    setList: React.Dispatch<React.SetStateAction<string[]>>,
-    item: string,
-    setInput: React.Dispatch<React.SetStateAction<string>>
-  ) => void;
-  handleRemoveItem: (
-    list: string[],
-    setList: React.Dispatch<React.SetStateAction<string[]>>,
-    index: number
-  ) => void;
-}
+export function MemoriesStep() {
+  const [memoryInput, setMemoryInput] = useState<string>();
+  const [memories, setMemories] = useAtom(memoriesAtom);
 
-export function MemoriesStep({
-  memories,
-  setMemories,
-  memoryInput,
-  setMemoryInput,
-  handleAddItem,
-  handleRemoveItem,
-}: MemoriesStepProps) {
+  function handleAddMemory() {
+    if (!memoryInput) {
+      toast.info("Hey, the field is empty.");
+      return;
+    }
+
+    setMemories(prev => [...prev, { id: crypto.randomUUID(), content: memoryInput }]);
+    setMemoryInput("");
+  }
+
+  function handleRemoveMemory({ id }: { id: string }) {
+    setMemories(prev => prev.filter(item => item.id !== id));
+  }
+
   return (
     <div className="animate-in fade-in slide-in-from-right-4 space-y-6 duration-300">
       <div className="space-y-2">
@@ -46,32 +44,32 @@ export function MemoriesStep({
             onKeyDown={e => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                handleAddItem(memories, setMemories, memoryInput, setMemoryInput);
+                handleAddMemory();
               }
             }}
           />
           <Button
-            onClick={() => handleAddItem(memories, setMemories, memoryInput, setMemoryInput)}
+            onClick={handleAddMemory}
             size="icon"
             className="absolute right-3 bottom-3 h-8 w-8 rounded-full shadow-sm"
-            disabled={!memoryInput.trim()}
+            disabled={!memoryInput?.trim()}
           >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {memories.map((memory, index) => (
+          {memories?.map(item => (
             <div
-              key={index}
+              key={item.id}
               className="group bg-secondary/50 animate-in zoom-in flex items-center gap-2 rounded-full py-1.5 pr-1 pl-3 text-sm duration-200"
             >
-              <span className="max-w-[200px] truncate">{memory}</span>
+              <span className="max-w-[200px] truncate">{item.content}</span>
               <Button
                 variant="ghost"
                 size="icon"
                 className="hover:bg-destructive/10 hover:text-destructive h-6 w-6 rounded-full"
-                onClick={() => handleRemoveItem(memories, setMemories, index)}
+                onClick={() => handleRemoveMemory({ id: item.id })}
               >
                 <X className="h-3 w-3" />
               </Button>

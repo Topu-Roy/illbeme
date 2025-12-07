@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import type { Mood } from "@/generated/prisma/enums";
+import { useState } from "react";
 import confetti from "canvas-confetti";
+import { useAtomValue } from "jotai";
+import { toast } from "sonner";
 import {
   useCreateDailyCheckInMutation,
   useDailyCheckInQuery,
@@ -17,178 +18,111 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { EmotionStep } from "./EmotionStep";
 import { LearningsStep } from "./LearningsStep";
 import { MemoriesStep } from "./MemoriesStep";
-import { MoodStep } from "./MoodStep";
+import { MoodAndEmotionStep } from "./MoodAndEmotionStep";
 import { SummaryStep } from "./SummaryStep";
-import type { DailyCheckInProps, Emotion } from "./types";
+import { emotionsAtom, learningsAtom, memoriesAtom, overallMoodAtom } from "./wizardState";
 
-export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
+export function DailyCheckIn() {
+  const [isOpen, setIsOpen] = useState(false);
   const { mutate: saveCheckIn, isPending: isCreating } = useCreateDailyCheckInMutation();
   const { mutate: updateCheckIn, isPending: isUpdating } = useUpdateDailyCheckInMutation();
   const { data: todayCheckIn } = useDailyCheckInQuery({ date: new Date() });
+  const [step, setStep] = useState(1);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [step, setStep] = useState(todayCheckIn && !isEditing ? 5 : 1);
+  const overallMood = useAtomValue(overallMoodAtom);
+  const learnings = useAtomValue(learningsAtom);
+  const memories = useAtomValue(memoriesAtom);
+  const emotions = useAtomValue(emotionsAtom);
 
-  const [assessment, setAssessment] = useState<number>(5);
-  const [generalMood, setGeneralMood] = useState<Mood | null>(todayCheckIn?.data?.overallMood ?? null);
+  const handleNext = () => setStep(prev => prev + 1);
 
-  // Initialize emotion tallies from existing check-in
-  const initializeEmotionTallies = () => {
-    const defaultTallies: Record<Emotion, number> = {
-      Happy: 0,
-      Excited: 0,
-      Relaxed: 0,
-      Sad: 0,
-      Anxious: 0,
-      Angry: 0,
-      Tired: 0,
-      Frustrated: 0,
-      Proud: 0,
-      Grateful: 0,
-      Confused: 0,
-      Hopeful: 0,
-    };
-
-    if (todayCheckIn?.data?.emotions && typeof todayCheckIn.data.emotions === "object") {
-      const existing = todayCheckIn.data.emotions as Record<string, number>;
-      Object.keys(existing).forEach(key => {
-        if (key in defaultTallies) {
-          defaultTallies[key as Emotion] = existing[key];
-        }
-      });
+  function handleBack() {
+    if (step === 1) {
+      setIsOpen(false);
+    } else {
+      setStep(prev => prev - 1);
     }
-
-    return defaultTallies;
-  };
-
-  const [emotionTallies, setEmotionTallies] = useState<Record<Emotion, number>>(initializeEmotionTallies());
-
-  const [learned] = useState(todayCheckIn?.data?.lessonsLearned ?? "");
-  const [learnings, setLearnings] = useState<string[]>(todayCheckIn?.data?.learnings?.map(l => l.content) ?? []);
-  const [memories, setMemories] = useState<string[]>(todayCheckIn?.data?.memories?.map(m => m.content) ?? []);
-
-  const [memoryInput, setMemoryInput] = useState("");
-  const [learningInput, setLearningInput] = useState("");
-
-  const handleNext = () => {
-    if (step === 3 && memoryInput.trim()) {
-      setMemories(prev => [...prev, memoryInput.trim()]);
-      setMemoryInput("");
-    }
-
-    if (step === 4 && learningInput.trim()) {
-      setLearnings(prev => [...prev, learningInput.trim()]);
-      setLearningInput("");
-    }
-
-    setStep(prev => prev + 1);
-  };
-
-  const handleBack = () => setStep(prev => prev - 1);
-
-  const handleTally = (emotion: Emotion, delta: number) => {
-    setEmotionTallies(prev => ({
-      ...prev,
-      [emotion]: Math.max(0, prev[emotion] + delta),
-    }));
-  };
-
-  const handleAddItem = (
-    list: string[],
-    setList: React.Dispatch<React.SetStateAction<string[]>>,
-    item: string,
-    setInput: React.Dispatch<React.SetStateAction<string>>
-  ) => {
-    if (item.trim()) {
-      setList([...list, item.trim()]);
-      setInput("");
-    }
-  };
-
-  const handleRemoveItem = (
-    list: string[],
-    setList: React.Dispatch<React.SetStateAction<string[]>>,
-    index: number
-  ) => {
-    setList(list.filter((_, i) => i !== index));
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    setStep(1);
-  };
+  }
 
   function handleSubmit() {
-    if (!generalMood) return;
-
-    // Filter out zero counts
-    const emotionsToSave: Record<string, number> = {};
-    Object.entries(emotionTallies).forEach(([key, count]) => {
-      if (count > 0) emotionsToSave[key] = count;
-    });
-
-    // Check for positive mood to trigger confetti
-    const positiveMoods: Mood[] = ["Great", "Good"];
-    if (positiveMoods.includes(generalMood)) {
-      const duration = 3000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
-
-      const interval: ReturnType<typeof setInterval> = setInterval(function () {
-        const timeLeft = animationEnd - Date.now();
-
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
-        }
-
-        const particleCount = 50 * (timeLeft / duration);
-        void confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-        });
-        void confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-        });
-      }, 250);
+    if (!overallMood) {
+      toast.warning("Overall mood is not selected.");
+      return;
     }
 
-    const checkInData = {
-      overallMood: generalMood,
-      emotions: emotionsToSave,
-      lessonsLearned: learned,
-      learnings: learnings,
-      memories: memories,
-    };
-
-    if (todayCheckIn?.data?.id && isEditing) {
+    if (todayCheckIn?.data?.id) {
       updateCheckIn(
-        { id: todayCheckIn.data.id, ...checkInData },
+        {
+          id: todayCheckIn.data.id,
+          emotions,
+          overallMood: overallMood,
+          learnings: learnings.map(item => item.content),
+          memories: memories.map(item => item.content),
+        },
         {
           onSuccess: () => {
-            setIsEditing(false);
+            toast.success("Updated successfully.");
+
+            // Review tab
             setStep(5);
           },
         }
       );
-    } else {
-      saveCheckIn(checkInData, {
+    }
+
+    saveCheckIn(
+      {
+        emotions,
+        overallMood: overallMood,
+        learnings: learnings.map(item => item.content),
+        memories: memories.map(item => item.content),
+      },
+      {
         onSuccess: () => {
+          toast.success("Saved successfully.");
+
+          // Confetti
+          if (overallMood === "Great" || overallMood === "Good") {
+            const duration = 3000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+            const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+            const interval: ReturnType<typeof setInterval> = setInterval(function () {
+              const timeLeft = animationEnd - Date.now();
+
+              if (timeLeft <= 0) {
+                return clearInterval(interval);
+              }
+
+              const particleCount = 50 * (timeLeft / duration);
+
+              void confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+              });
+
+              void confetti({
+                ...defaults,
+                particleCount,
+                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+              });
+            }, 250);
+          }
+
+          // Review tab
           setStep(5);
         },
-      });
-    }
+      }
+    );
   }
 
   return (
-    <Dialog open={true} onOpenChange={open => !open && onCancel()}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="max-h-[90vh] gap-0 overflow-hidden overflow-y-auto p-0 sm:max-w-xl">
         <div className="border-b px-6 py-4">
           <DialogHeader>
@@ -197,73 +131,27 @@ export function DailyCheckIn({ onComplete, onCancel }: DailyCheckInProps) {
           </DialogHeader>
         </div>
         <div className="space-y-6 p-6">
-          {step === 1 && (
-            <MoodStep
-              assessment={assessment}
-              setAssessment={setAssessment}
-              generalMood={generalMood}
-              setGeneralMood={setGeneralMood}
-            />
-          )}
-
-          {step === 2 && <EmotionStep emotionTallies={emotionTallies} handleTally={handleTally} />}
-
-          {step === 3 && (
-            <MemoriesStep
-              memories={memories}
-              setMemories={setMemories}
-              memoryInput={memoryInput}
-              setMemoryInput={setMemoryInput}
-              handleAddItem={handleAddItem}
-              handleRemoveItem={handleRemoveItem}
-            />
-          )}
-
-          {step === 4 && (
-            <LearningsStep
-              learnings={learnings}
-              setLearnings={setLearnings}
-              learningInput={learningInput}
-              setLearningInput={setLearningInput}
-              handleAddItem={handleAddItem}
-              handleRemoveItem={handleRemoveItem}
-            />
-          )}
-
-          {step === 5 && (
-            <SummaryStep
-              assessment={assessment}
-              generalMood={generalMood}
-              todayCheckIn={todayCheckIn}
-              emotionTallies={emotionTallies}
-              memories={memories}
-              learnings={learnings}
-              isEditing={isEditing}
-              handleEdit={handleEdit}
-            />
-          )}
+          {step === 1 && <MoodAndEmotionStep />}
+          {step === 2 && <MemoriesStep />}
+          {step === 3 && <LearningsStep />}
+          {step === 4 && <SummaryStep />}
         </div>
+
         <div className="bg-secondary/10 border-t p-6">
           <DialogFooter className="flex gap-2 sm:justify-between">
-            <Button variant="ghost" onClick={step === 1 ? onCancel : handleBack}>
+            <Button variant="ghost" onClick={handleBack}>
               {step === 1 ? "Cancel" : "Back"}
             </Button>
 
-            {step < 5 ? (
-              <Button onClick={handleNext} disabled={step === 1 && !generalMood}>
-                Next
-              </Button>
+            {step < 4 ? (
+              <Button onClick={handleNext}>Next</Button>
             ) : (
               <>
-                {todayCheckIn && !isEditing ? (
-                  <Button onClick={onComplete}>Close</Button>
+                {todayCheckIn ? (
+                  <Button onClick={() => setIsOpen(false)}>Close</Button>
                 ) : (
                   <Button onClick={handleSubmit} disabled={isCreating || isUpdating}>
-                    {isCreating || isUpdating
-                      ? "Generating AI rating..."
-                      : isEditing
-                        ? "Save Changes"
-                        : "Complete Check-In"}
+                    {isCreating || isUpdating ? "Generating AI rating..." : "Complete Check-In"}
                   </Button>
                 )}
               </>

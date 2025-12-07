@@ -7,7 +7,6 @@ export const getDailyCheckInSchema = object({
 export const createDailyCheckInSchema = object({
   overallMood: enum_(["Great", "Good", "Okay", "Bad", "Awful"]),
   emotions: record(string(), number()),
-  lessonsLearned: string().optional(),
   learnings: array(string()).optional(),
   memories: array(string()).optional(),
 });
@@ -16,7 +15,6 @@ export const updateDailyCheckInSchema = object({
   id: string(),
   overallMood: enum_(["Great", "Good", "Okay", "Bad", "Awful"]),
   emotions: record(string(), number()),
-  lessonsLearned: string().optional(),
   learnings: array(string()).optional(),
   memories: array(string()).optional(),
 });
