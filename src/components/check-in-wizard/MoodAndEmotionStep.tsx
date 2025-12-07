@@ -19,8 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Button } from "../ui/button";
-import { type Emotion } from "./types";
-import { emotionsAtom, overallMoodAtom } from "./wizardState";
+import { emotionsAtom, overallMoodAtom, type Emotion } from "./wizardState";
 
 const MOODS: { label: Mood; icon: React.ReactNode }[] = [
   { label: "Great", icon: <Heart className="size-5" /> },
