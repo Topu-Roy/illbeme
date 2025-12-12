@@ -23,7 +23,7 @@ const app = new Elysia({ prefix: "/api" })
   //* -------------------------------------- Logger --------------------------------------
   .use(logger({ level: "debug" }))
 
-  // ---------------------------------- Public routes ----------------------------------
+  //* ---------------------------------- Public routes ----------------------------------
   .guard({}, app => app.get("/", "Hello Nextjs"))
 
   //* -------------------------------- Protected routes --------------------------------
@@ -569,5 +569,12 @@ const app = new Elysia({ prefix: "/api" })
 
 export const GET = app.fetch;
 export const POST = app.fetch;
+export const PATCH = app.fetch;
+export const DELETE = app.fetch;
+
+console.clear();
+for (const route of app.routes) {
+  console.log(route.method, route.path);
+}
 
 export type app = typeof app;
