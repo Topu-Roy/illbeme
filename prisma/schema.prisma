@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -13,6 +13,33 @@ enum Mood {
   Okay
   Bad
   Awful
+}
+
+enum Emotion {
+  Happy
+  Excited
+  Grateful
+  Proud
+  Hopeful
+  Relaxed
+  Tired
+  Anxious
+  Frustrated
+  Confused
+  Angry
+  Sad
+}
+
+model CheckInEmotion {
+  id             String  @id @default(uuid())
+  dailyCheckInId String
+  emotion        Emotion
+  count          Int
+
+  dailyCheckIn DailyCheckIn @relation(fields: [dailyCheckInId], references: [id], onDelete: Cascade)
+
+  @@unique([dailyCheckInId, emotion])
+  @@map("check_in_emotion")
 }
 
 model JournalEntry {
@@ -30,16 +57,16 @@ model JournalEntry {
 }
 
 model DailyCheckIn {
-  id             String            @id @default(uuid())
-  userId         String
-  date           DateTime          @default(now())
-  overallMood    Mood
-  emotions       Json // Example: { "Happy": 2, "Anxious": 1 }
-  overallRating  Int
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-  learnings      CheckInLearning[]
-  memories       CheckInMemory[]
+  id            String            @id @default(uuid())
+  userId        String
+  date          DateTime          @default(now())
+  overallMood   Mood
+  overallRating Int
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  emotions      CheckInEmotion[]
+  learnings     CheckInLearning[]
+  memories      CheckInMemory[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -82,7 +109,7 @@ model CheckInLearning {
 }
 
 model User {
-  id              String            @id @default(uuid())
+  id              String            @id
   name            String
   email           String
   emailVerified   Boolean           @default(false)
@@ -95,17 +122,17 @@ model User {
   banExpires      DateTime?
   sessions        Session[]
   accounts        Account[]
-  passkeys        Passkey[]
   journalEntries  JournalEntry[]
   dailyCheckIns   DailyCheckIn[]
   learnings       CheckInLearning[]
   checkInMemories CheckInMemory[]
 
+  @@unique([email])
   @@map("user")
 }
 
 model Session {
-  id             String   @id @default(uuid())
+  id             String   @id
   expiresAt      DateTime
   token          String
   createdAt      DateTime @default(now())
@@ -153,24 +180,4 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
-}
-
-model Passkey {
-  id           String   @id
-  name         String?
-  publicKey    String
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  credentialID String
-  counter      Int
-  deviceType   String
-  backedUp     Boolean
-  transports   String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  aaguid       String?
-
-  @@index([userId])
-  @@index([credentialID])
-  @@map("passkey")
 }

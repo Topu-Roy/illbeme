@@ -7,15 +7,9 @@ import tseslint from "typescript-eslint";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+
   // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-    "src/generated/**",
-  ]),
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "generated/**"]),
 
   // TypeScript-specific configuration
   {
